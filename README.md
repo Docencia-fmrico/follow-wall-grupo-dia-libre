@@ -3,7 +3,7 @@
 
 Group Members:
 
-Luis Miguel López Martín
-Juan Camilo Carmona Sanchez
-Guillermo Bernal Ruiz
+Luis Miguel López Martín |
+Juan Camilo Carmona Sanchez |
+Guillermo Bernal Ruiz |
 Jose Manuel Tostado Felipe
