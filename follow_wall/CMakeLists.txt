@@ -24,8 +24,11 @@ install(TARGETS
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-
 ament_export_dependencies(${dependencies})
 
 ament_package()
+
+install(DIRECTORY
+  launch rviz
+  DESTINATION share/${PROJECT_NAME}/
+)
