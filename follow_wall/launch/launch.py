@@ -71,7 +71,8 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        output='screen'
+        output='screen',
+        arguments=['-d' + os.path.join(get_package_share_directory('package_name'), 'config', 'config_file.rviz')]
     )
     ld = LaunchDescription()
     
