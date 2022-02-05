@@ -5,19 +5,18 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "std_msgs/msg/string.hpp"
 
-
-
-
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
 
-class LifeCycleNodeExample : public rclcpp_lifecycle::LifecycleNode
+class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
 {
 public:
-  LifeCycleNodeExample()
-  : rclcpp_lifecycle::LifecycleNode("lifecycle_node_example")
+  FollowWallLifeCycle()
+  : rclcpp_lifecycle::LifecycleNode("follow_wall_lifecycle")
   {
-    declare_parameter("speed", 0.34);
+    laser_sub_ = create_subscription<std_msgs::msg::String>(
+      "scan_raw", 10, std::bind(&MyNodeSubscriber::callback, this, _1));
+    speed_pub_ = create_publisher<std_msgs::msg::String>("chatter", 10);
   }
 
   using CallbackReturnT =
@@ -72,7 +71,8 @@ public:
 
 
 private:
-  double speed_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr laser_sub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr speed_pub_;
 };
 
 
@@ -92,10 +92,6 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
 
   //eh hecho un nodo aparte que se suscriba pq en principio los lifecycle nodes polludos estos no implementan subscripcion
-  auto sub_ = rclcpp::Node::make_shared("simple_node_sub");
-  
-  auto subscription = sub_->create_subscription<std_msgs::msg::String>(
-    "/scan_raw", rclcpp::QoS(100).transient_local(), callback);
   
   rclcpp::spin(sub_);
 
