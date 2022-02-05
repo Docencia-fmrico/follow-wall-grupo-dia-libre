@@ -6,7 +6,7 @@
   
   <description>Tiago follows the wall</description>
 
-  <maintainer email="fmrico@gmail.com">Francisco Martin Rico</maintainer>
+  <maintainer email="gdl@gmail.com">Grupo Dia Libre</maintainer>
  
   <license>Apache License, Version 2.0</license>
 
@@ -14,6 +14,8 @@
 
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>geometry_msgs</depend>
    
   <export>
     <build_type>ament_cmake</build_type>
