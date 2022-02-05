@@ -6,11 +6,16 @@ set(CMAKE_BUILD_TYPE DEBUG)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+
 
 set(dependencies
     rclcpp
+    rclcpp_lifecycle
     sensor_msgs
+    geometry_msgs
 )
 
 add_executable(follow_wall_node src/follow_wall_node.cpp)
