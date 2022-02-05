@@ -14,6 +14,7 @@ public:
   FollowWallLifeCycle()
   : rclcpp_lifecycle::LifecycleNode("follow_wall_lifecycle")
   {
+    //el topic de velocidad es /nav_vel y el tipo de mensaje es geometry_msgs/msg/Twist B)
     laser_sub_ = create_subscription<std_msgs::msg::String>(
       "scan_raw", 10, std::bind(&MyNodeSubscriber::callback, this, _1));
     speed_pub_ = create_publisher<std_msgs::msg::String>("chatter", 10);
