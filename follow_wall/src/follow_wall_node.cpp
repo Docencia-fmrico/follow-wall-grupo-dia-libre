@@ -18,7 +18,7 @@ public:
   {
     //el topic de velocidad es /nav_vel y el tipo de mensaje es geometry_msgs/msg/Twist B)
     laser_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
-      "scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
+      "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
     speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); //preguntar que poner aqui
   }
 
@@ -80,15 +80,64 @@ public:
 private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
   rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr speed_pub_;
-  // boolean objectLeft
-  // boolean objectRight
-  // boolean objectCenter
+  bool objectLeft;
+  bool objectRight;
+  bool objectCenter;
 
 private:
   void laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
   {
-    RCLCPP_INFO(this->get_logger(), "I heard: [%s] in %s",
-      msg->ranges[0], msg->ranges[100]);
+    int sz = msg->ranges.size();
+    int f_left = (int)sz/3;
+    int f_center = (int)2*sz/3;
+    int f_right = sz;
+    float limit = 0.35;
+
+    float mean_left = 0;
+    for (int i = 0; i < f_left; i++)
+    {
+      mean_left = mean_left + msg->ranges[i];
+    }
+    mean_left = mean_left / ((int)sz/3);
+    if (mean_left < limit)
+      objectLeft = false;
+    else
+      objectLeft = true;
+
+    float mean_center = 0;
+    for (int i = f_left; i < f_center; i++)
+    {
+      mean_center = mean_center + msg->ranges[i];
+    }
+    mean_center = mean_center / ((int)sz/3);
+
+    if (mean_center < limit)
+      objectCenter = false;
+    else
+      objectCenter = true;
+
+    float mean_right = 0;
+    for (int i = f_center; i < f_right; i++)
+    {
+      mean_right = mean_right + msg->ranges[i];
+    }
+    mean_right = mean_right / ((int)sz/3);
+
+
+    if (mean_right < limit)
+      objectRight = false;
+    else
+      objectRight = true;
+
+    RCLCPP_INFO(this->get_logger(), "Media de izquierda: %f",
+      mean_left);
+
+    RCLCPP_INFO(this->get_logger(), "Media de centro: %f",
+      mean_center);
+
+    RCLCPP_INFO(this->get_logger(), "Media de derecha: %f",
+      mean_right);
+
   }
   // here we can define 3 zones in the msg->ranges : left center and right.
   // according to the value on those 3 zones, we can update a boolean for each:
