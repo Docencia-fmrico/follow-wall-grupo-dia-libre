@@ -18,12 +18,23 @@ set(dependencies
     geometry_msgs
 )
 
-add_executable(follow_wall_node src/follow_wall_node.cpp)
-ament_target_dependencies(follow_wall_node ${dependencies})
+include_directories(include)
+
+
+add_library(${PROJECT_NAME} SHARED
+follow_wall/src/follow_wall_node.cpp
+)
+ament_target_dependencies(${PROJECT_NAME} ${dependencies})
+
+add_executable(nodo_follow src/nodo_follow.cpp)
+ament_target_dependencies(nodo_follow ${dependencies})
+
+target_link_libraries(nodo_follow ${PROJECT_NAME})
 
 
 install(TARGETS
-  follow_wall_node
+  ${PROJECT_NAME}
+  nodo_follow
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
@@ -31,6 +42,12 @@ install(TARGETS
 
 install(DIRECTORY  launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  include
+  src
 )
 
 ament_export_dependencies(${dependencies})
