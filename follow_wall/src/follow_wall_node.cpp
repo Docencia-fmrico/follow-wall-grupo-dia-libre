@@ -67,7 +67,33 @@ public:
       return;
     }
 
+    geometry_msgs::msg::Twist cmd;
+
+
     RCLCPP_INFO(get_logger(), "Node [%s] active", get_name());
+
+    
+    if(!objectCenter){
+      cmd.linear.x = 0.25;
+      cmd.angular.z = 0;
+    }
+
+    else if(objectCenter){
+      cmd.linear.x = 0;
+      cmd.angular.z = 0.25;
+    }
+
+    else if(objectLeft && !objectCenter)
+    {
+      cmd.linear.x = 0.25;
+      cmd.angular.z = 0;
+    }
+    else if(objectLeft && objectCenter)
+    {
+      cmd.linear.x = 0;
+      cmd.angular.z = 0.25;
+    }
+
     // the idea will be to use the three boleans updatted by laser and work in the following way:
     // 1 go fowrard till we find a wall
     // 2 turn right on that wall.
@@ -139,6 +165,7 @@ private:
       mean_right);
 
   }
+  
   // here we can define 3 zones in the msg->ranges : left center and right.
   // according to the value on those 3 zones, we can update a boolean for each:
   // objectLeft = true/false, objectright, objectcenter...
