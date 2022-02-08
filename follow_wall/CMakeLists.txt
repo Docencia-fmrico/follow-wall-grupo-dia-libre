@@ -18,9 +18,21 @@ set(dependencies
     geometry_msgs
 )
 
-add_executable(follow_wall_node src/follow_wall/follow_wall_node.cpp include/follow_wall/follow_wall.hpp src/follow_wall.cpp)
-ament_target_dependencies(follow_wall_node ${dependencies})
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  include
+  src
+)
 
+add_library(${PROJECT_NAME} SHARED src/follow_wall/follow_wall.cpp)
+
+ament_target_dependencies(${PROJECT_NAME} ${dependencies})
+
+add_executable(follow_wall_node 
+src/follow_wall_node.cpp)
+
+ament_target_dependencies(follow_wall_node ${dependencies})
+target_link_libraries(follow_wall_node ${PROJECT_NAME})
 
 install(TARGETS
   follow_wall_node
@@ -37,13 +49,6 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
-
-
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-  include
-  src
-)
 
 ament_export_dependencies(${dependencies})
 ament_package()

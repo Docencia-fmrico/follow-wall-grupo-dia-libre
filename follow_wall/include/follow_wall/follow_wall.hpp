@@ -1,3 +1,6 @@
+#ifndef FOLLOW_WALL_HPP_
+#define FOLLOW_WALL_HPP_
+
 #include <memory>
 
 #include "lifecycle_msgs/msg/state.hpp"
@@ -7,22 +10,16 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 
-using rcl_interfaces::msg::ParameterType;
-using std::placeholders::_1;
+namespace follow_wall
+{
+
+using CallbackReturnT = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
 class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
 {
     public:
 
-        FollowWallLifeCycle()
-        : rclcpp_lifecycle::LifecycleNode("follow_wall_lifecycle")
-        {
-            //el topic de velocidad es /nav_vel y el tipo de mensaje es geometry_msgs/msg/Twist B)
-            laser_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
-            "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
-            speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); //preguntar que poner aqui
-        }
-        using CallbackReturnT = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+        FollowWallLifeCycle();
 
         CallbackReturnT on_configure(const rclcpp_lifecycle::State & state);
 
@@ -41,11 +38,24 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
     private:
         rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
         rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr speed_pub_;
+
         bool objectLeft;
         bool objectRight;
         bool objectCenter;
 
+        const float SWEEPING_RANGE = 50;
+        const float OBJECT_LIMIT = 0.50;
+
+        // to understand how these functions work check this image
+        // https://imgur.com/a/6N0uFbl
+
+        bool get_object_right(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+        bool get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+        bool get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+
         void laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 
-
 };
+}
+
+#endif //FOLLOW_WALL_HPP_
