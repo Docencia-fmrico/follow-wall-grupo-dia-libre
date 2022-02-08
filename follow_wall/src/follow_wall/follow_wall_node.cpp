@@ -1,5 +1,51 @@
 #include "follow_wall/follow_wall.hpp"
 
+  using CallbackReturnT = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
+  FollowWallLifeCycle(): rclcpp_lifecycle::LifecycleNode("follow_wall_lifecycle")
+  {
+    //el topic de velocidad es /nav_vel y el tipo de mensaje es geometry_msgs/msg/Twist B)
+    laser_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
+    "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
+    speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); //preguntar que poner aqui
+  }
+
+  CallbackReturnT FollowWallLifeCycle::on_configure(const rclcpp_lifecycle::State & state)
+  {
+    RCLCPP_INFO(get_logger(), "[%s] Configuring from [%s] state...", get_name(), state.label().c_str());
+            
+    return CallbackReturnT::SUCCESS;
+  }
+
+  CallbackReturnT FollowWallLifeCycle::on_activate(const rclcpp_lifecycle::State & state) 
+  {
+    RCLCPP_INFO(get_logger(), "[%s] Activating from [%s] state...", get_name(), state.label().c_str());
+    return CallbackReturnT::SUCCESS;
+  }
+
+  CallbackReturnT FollowWallLifeCycle::on_deactivate(const rclcpp_lifecycle::State & state) 
+  {
+    RCLCPP_INFO(get_logger(), "[%s] Deactivating from [%s] state...", get_name(), state.label().c_str());
+    return CallbackReturnT::SUCCESS;
+  }
+
+  CallbackReturnT FollowWallLifeCycle::on_cleanup(const rclcpp_lifecycle::State & state) 
+  {
+    RCLCPP_INFO(get_logger(), "[%s] Cleanning Up from [%s] state...", get_name(), state.label().c_str());
+    return CallbackReturnT::SUCCESS;
+  }
+
+  CallbackReturnT FollowWallLifeCycle::on_shutdown(const rclcpp_lifecycle::State & state) 
+  {
+    RCLCPP_INFO(get_logger(), "[%s] Shutting Down from [%s] state...", get_name(), state.label().c_str());
+    return CallbackReturnT::SUCCESS;
+  }
+
+  CallbackReturnT FollowWallLifeCycle::on_error(const rclcpp_lifecycle::State & state) 
+  {
+    RCLCPP_INFO(get_logger(), "[%s] Shutting Down from [%s] state...", get_name(), state.label().c_str());
+    return CallbackReturnT::SUCCESS;
+  }
 
   void FollowWallLifeCycle::do_work() {
     if (get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {

@@ -22,46 +22,19 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
             "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
             speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); //preguntar que poner aqui
         }
+        using CallbackReturnT = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-        using CallbackReturnT =
-            rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+        CallbackReturnT on_configure(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_configure(const rclcpp_lifecycle::State & state)
-        {
-            RCLCPP_INFO(get_logger(), "[%s] Configuring from [%s] state...", get_name(), state.label().c_str());
-            
-            return CallbackReturnT::SUCCESS;
-        }
+        CallbackReturnT on_activate(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_activate(const rclcpp_lifecycle::State & state) 
-        {
-            RCLCPP_INFO(get_logger(), "[%s] Activating from [%s] state...", get_name(), state.label().c_str());
-            return CallbackReturnT::SUCCESS;
-        }
+        CallbackReturnT on_deactivate(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_deactivate(const rclcpp_lifecycle::State & state) 
-        {
-            RCLCPP_INFO(get_logger(), "[%s] Deactivating from [%s] state...", get_name(), state.label().c_str());
-            return CallbackReturnT::SUCCESS;
-        }
+        CallbackReturnT on_cleanup(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_cleanup(const rclcpp_lifecycle::State & state) 
-        {
-            RCLCPP_INFO(get_logger(), "[%s] Cleanning Up from [%s] state...", get_name(), state.label().c_str());
-            return CallbackReturnT::SUCCESS;
-        }
+        CallbackReturnT on_shutdown(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_shutdown(const rclcpp_lifecycle::State & state) 
-        {
-            RCLCPP_INFO(get_logger(), "[%s] Shutting Down from [%s] state...", get_name(), state.label().c_str());
-            return CallbackReturnT::SUCCESS;
-        }
-
-            CallbackReturnT on_error(const rclcpp_lifecycle::State & state) 
-        {
-            RCLCPP_INFO(get_logger(), "[%s] Shutting Down from [%s] state...", get_name(), state.label().c_str());
-            return CallbackReturnT::SUCCESS;
-        }
+        CallbackReturnT on_error(const rclcpp_lifecycle::State & state);
 
         void do_work();
 
