@@ -1,11 +1,10 @@
 #include "follow_wall/follow_wall.hpp"
 
-
 int main(int argc, char * argv[])
 {
-  auto node = std::make_shared<FollowWallLifeCycle>();
+  rclcpp::init(argc, argv);
 
-  rclcpp::init(argc, argv);  
+  auto node = std::make_shared<follow_wall::FollowWallLifeCycle>();
 
   rclcpp::Rate rate(5);
   while (rclcpp::ok()) {
@@ -15,7 +14,6 @@ int main(int argc, char * argv[])
     rate.sleep();
   }
   
-
   rclcpp::shutdown();
 
   return 0;
