@@ -27,6 +27,7 @@ namespace follow_wall
     laser_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
     "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
     speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); 
+    state_ = 0;
             
     return CallbackReturnT::SUCCESS;
   }
@@ -35,6 +36,8 @@ namespace follow_wall
   FollowWallLifeCycle::on_activate(const rclcpp_lifecycle::State & state) 
   {
     RCLCPP_INFO(get_logger(), "[%s] Activating from [%s] state...", get_name(), state.label().c_str());
+    speed_pub_->on_activate();
+    last_time_ = now();
     return CallbackReturnT::SUCCESS;
   }
   CallbackReturnT
@@ -72,31 +75,54 @@ namespace follow_wall
     }
 
     geometry_msgs::msg::Twist cmd;
+    rclcpp::Time ts = now();
 
 
     RCLCPP_INFO(get_logger(), "Node [%s] active", get_name());
 
-    
-    if(!objectCenter){
-      cmd.linear.x = 0.25;
-      cmd.angular.z = 0;
+    if (state_ <= 1)
+    {
+        if (!objectCenter)
+        {
+          cmd.linear.x = 0.25;
+          cmd.angular.z = 0;
+          if (state_)
+            state_ = 2;
+        }
+        else
+        {
+          cmd.linear.x = 0;
+          cmd.angular.z = -0.25;
+          state_ = 1;
+        }
+    }
+    else
+    {
+      if (!objectCenter && !objectLeft )
+      {
+        cmd.linear.x = 0;
+        cmd.angular.z = 0.25;
+      }
+      else if(objectCenter)
+      {
+        cmd.linear.x = 0;
+        cmd.angular.z = -0.25;
+      }
+      else
+      {
+        cmd.linear.x = 0.25;
+        cmd.angular.z = 0;
+      }
+    }
+    if ((ts - last_time_).seconds() > 2.0)
+    {
+      RCLCPP_INFO(get_logger(), "Two seconds");
+      last_time_ = ts;
     }
 
-    else if(objectCenter){
-      cmd.linear.x = 0;
-      cmd.angular.z = 0.25;
-    }
-
-    else if(objectLeft && !objectCenter)
-    {
-      cmd.linear.x = 0.25;
-      cmd.angular.z = 0;
-    }
-    else if(objectLeft && objectCenter)
-    {
-      cmd.linear.x = 0;
-      cmd.angular.z = 0.25;
-    }
+    speed_pub_->publish(cmd);
+    //RCLCPP_INFO(get_logger(), "State [%d]", state_);
+      
   }
 
   bool
@@ -112,7 +138,7 @@ namespace follow_wall
       mean_right = mean_right + laser_data->ranges[i];
     }
     mean_right = mean_right / SWEEPING_RANGE;
-    RCLCPP_INFO(get_logger(), "Object right: %f", mean_right);
+    //RCLCPP_INFO(get_logger(), "Object right: %d", mean_right < OBJECT_LIMIT);
   
     return mean_right < OBJECT_LIMIT;
   }
@@ -129,7 +155,8 @@ namespace follow_wall
       mean_center = mean_center + laser_data->ranges[i];
     }
     mean_center = mean_center / SWEEPING_RANGE;
-    RCLCPP_INFO(get_logger(), "Object cENTER: %f", mean_center);
+    //RCLCPP_INFO(get_logger(), "Distance Center: %f", mean_center);
+    //RCLCPP_INFO(get_logger(), "Object Center: %d", mean_center < OBJECT_LIMIT);
   
 
     return mean_center < OBJECT_LIMIT;
@@ -149,7 +176,7 @@ namespace follow_wall
     }
     mean_left = mean_left / SWEEPING_RANGE;
 
-    RCLCPP_INFO(get_logger(), "Object Left: %f", mean_left);
+    //RCLCPP_INFO(get_logger(), "Object Left: %d", mean_left < OBJECT_LIMIT);
 
     return mean_left < OBJECT_LIMIT;
   }

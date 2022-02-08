@@ -42,9 +42,11 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         bool objectLeft;
         bool objectRight;
         bool objectCenter;
+        int state_;
+        rclcpp::Time last_time_;
 
-        const float SWEEPING_RANGE = 50;
-        const float OBJECT_LIMIT = 0.50;
+        const float SWEEPING_RANGE = 200;
+        const float OBJECT_LIMIT = 0.75;
 
         // to understand how these functions work check this image
         // https://imgur.com/a/6N0uFbl
