@@ -18,7 +18,7 @@ set(dependencies
     geometry_msgs
 )
 
-add_executable(follow_wall_node src/follow_wall/follow_wall_node.cpp include/follow_wall.hpp src/follow_wall.cpp)
+add_executable(follow_wall_node src/follow_wall/follow_wall_node.cpp include/follow_wall/follow_wall.hpp src/follow_wall.cpp)
 ament_target_dependencies(follow_wall_node ${dependencies})
 
 
