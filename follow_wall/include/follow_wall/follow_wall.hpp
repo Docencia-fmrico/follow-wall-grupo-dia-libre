@@ -1,5 +1,5 @@
-#ifndef FOLLOW_WALL_HPP_
-#define FOLLOW_WALL_HPP_
+#ifndef FOLLOW_WALL__FOLLOW_WALL_HPP_
+#define FOLLOW_WALL__FOLLOW_WALL_HPP_
 
 #include <memory>
 
@@ -17,47 +17,45 @@ using CallbackReturnT = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterfac
 
 class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
 {
-    public:
+public:
+  FollowWallLifeCycle();
 
-        FollowWallLifeCycle();
+  CallbackReturnT on_configure(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_configure(const rclcpp_lifecycle::State & state);
+  CallbackReturnT on_activate(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_activate(const rclcpp_lifecycle::State & state);
+  CallbackReturnT on_deactivate(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_deactivate(const rclcpp_lifecycle::State & state);
+  CallbackReturnT on_cleanup(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_cleanup(const rclcpp_lifecycle::State & state);
+  CallbackReturnT on_shutdown(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_shutdown(const rclcpp_lifecycle::State & state);
+  CallbackReturnT on_error(const rclcpp_lifecycle::State & state);
 
-        CallbackReturnT on_error(const rclcpp_lifecycle::State & state);
+  void do_work();
 
-        void do_work();
+private:
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
+  rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr speed_pub_;
 
-    private:
-        rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
-        rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr speed_pub_;
+  bool objectLeft;
+  bool objectRight;
+  bool objectCenter;
+  int state_;
+  rclcpp::Time last_time_;
 
-        bool objectLeft;
-        bool objectRight;
-        bool objectCenter;
-        int state_;
-        rclcpp::Time last_time_;
+  const float SWEEPING_RANGE = 200;
+  const float OBJECT_LIMIT = 0.75;
 
-        const float SWEEPING_RANGE = 200;
-        const float OBJECT_LIMIT = 0.75;
+// to understand how these functions work check this image
+// https://imgur.com/a/6N0uFbl
 
-        // to understand how these functions work check this image
-        // https://imgur.com/a/6N0uFbl
+  bool get_object_right(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+  bool get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+  bool get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
-        bool get_object_right(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
-        bool get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
-        bool get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
-
-        void laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg);
-
+  void laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 };
-}
+}  // namespace follow_wall
 
-#endif //FOLLOW_WALL_HPP_
+#endif  // FOLLOW_WALL__FOLLOW_WALL_HPP_
