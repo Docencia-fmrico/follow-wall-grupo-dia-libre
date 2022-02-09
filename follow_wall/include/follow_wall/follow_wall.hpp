@@ -45,14 +45,17 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
 
         float distance_to_left_;
         float distance_to_center_;
+        float prev_left_;
+
         int state_;
         rclcpp::Time last_time_;
         bool is_turning_;
         int turn_to_;
 
-        const float SWEEPING_RANGE = 50;
+        const float SWEEPING_RANGE = 5;
         const float OBJECT_LIMIT = 0.75;
-        const float TIME_TURNING = 6;
+
+        const float LEFT_DETECTION_ANGLE = 1.90;
 
         // to understand how these functions work check this image
         // https://imgur.com/a/6N0uFbl

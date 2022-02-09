@@ -29,7 +29,7 @@ namespace follow_wall
     speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); 
     state_ = 0;
     is_turning_ = false;
-            
+    prev_left_ = 0;
     return CallbackReturnT::SUCCESS;
   }
   
@@ -77,7 +77,7 @@ namespace follow_wall
       msg.angular.z = -0.25;
     }
     else{
-      msg.linear.x = 0.25;
+      msg.linear.x = 0;
       msg.angular.z = 0.25;
     }
     return msg;
@@ -93,6 +93,9 @@ namespace follow_wall
     RCLCPP_INFO(get_logger(), "Measure Center [%f]", distance_to_center_);
     RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
 
+    if (distance_to_center_ == 0 || distance_to_left_ == 0){ // at the beggining laser seems empty so avoid that
+      return;
+    }
     
     if (!state_)
     {
@@ -104,8 +107,9 @@ namespace follow_wall
         else
         {
           is_turning_ = true;
-          if (distance_to_left_ > (OBJECT_LIMIT - 0.01) && distance_to_left_ > (OBJECT_LIMIT + 0.01)){
+          if (prev_left_ < distance_to_left_){
             cmd = turn(RIGHT);
+            prev_left_ = distance_to_left_;
           }
           else{
             state_ = 1;
@@ -116,41 +120,41 @@ namespace follow_wall
     else
     {  
       if (is_turning_){
-        if (turn_to_ == LEFT){
-          if (distance_to_left_ > (OBJECT_LIMIT - 0.01) && distance_to_left_ > (OBJECT_LIMIT + 0.01)){
-            cmd = turn(LEFT);
+        if (turn_to_ == RIGHT){
+          if (prev_left_ < distance_to_left_){
+            cmd = turn(RIGHT);
           }
           else{
             is_turning_ = false;
           }
         }
         else{
-          if (distance_to_left_ > (OBJECT_LIMIT - 0.01) && distance_to_left_ > (OBJECT_LIMIT + 0.01)){
-            cmd = turn(RIGHT);
+          if (prev_left_ > distance_to_left_){
+            cmd = turn(LEFT);
           }
           else{
             is_turning_ = false;
           }
-
         }
       }
-      if (distance_to_center_ > OBJECT_LIMIT + 1 && distance_to_left_ > (OBJECT_LIMIT + 1))
-      {
-        is_turning_ = true;
-        turn_to_ = LEFT;
+      else{
+        if (distance_to_center_ > OBJECT_LIMIT + 0.2 && distance_to_left_ > OBJECT_LIMIT + 0.2)
+        {
+          is_turning_ = true;
+          turn_to_ = LEFT;
+        }
+        else if(distance_to_center_ < OBJECT_LIMIT - 0.2)
+        {
+          is_turning_ = true;
+          turn_to_ = RIGHT;
+        }
+        else
+        {
+          is_turning_ = false;
+          cmd.linear.x = 0.25;
+          cmd.angular.z = 0;
+        }
       }
-      else if(distance_to_center_ < OBJECT_LIMIT)
-      {
-        is_turning_ = true;
-        turn_to_ = RIGHT;
-      }
-      else
-      {
-        is_turning_ = false;
-        cmd.linear.x = 0.25;
-        cmd.angular.z = 0;
-      }
-
     }
 
     speed_pub_->publish(cmd);
@@ -159,17 +163,31 @@ namespace follow_wall
   }
   int
   FollowWallLifeCycle::get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    return (M_PI/2 - laser_data->angle_min)/laser_data->angle_increment;
+    return (LEFT_DETECTION_ANGLE - laser_data->angle_min)/laser_data->angle_increment;
   }
 
   float
   FollowWallLifeCycle::get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    return laser_data->ranges[laser_data->ranges.size()/2];
+    int start = laser_data->ranges.size()/2 - SWEEPING_RANGE/2;
+    int end = laser_data->ranges.size()/2 + SWEEPING_RANGE/2;
+    float avg = 0;
+    for (int i = start; i < end; i++)
+    {
+      avg = laser_data->ranges[i] + avg;
+    }
+    return avg/SWEEPING_RANGE;
   }
 
   float
   FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    return laser_data->ranges[get_left_lecture(laser_data)];
+    int start = get_left_lecture(laser_data) - SWEEPING_RANGE/2;
+    int end = get_left_lecture(laser_data) + SWEEPING_RANGE/2;
+    float avg = 0;
+    for (int i = start; i < end; i++)
+    {
+      avg = laser_data->ranges[i] + avg;
+    }
+    return avg/SWEEPING_RANGE;
   }
   
   void
