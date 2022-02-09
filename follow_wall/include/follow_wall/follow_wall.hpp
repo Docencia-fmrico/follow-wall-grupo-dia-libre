@@ -51,7 +51,7 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
 
         const float SWEEPING_RANGE = 50;
         const float OBJECT_LIMIT = 0.75;
-        const float TIME_TURNING = 7.0;
+        const float TIME_TURNING = 5.3;
 
         // to understand how these functions work check this image
         // https://imgur.com/a/6N0uFbl

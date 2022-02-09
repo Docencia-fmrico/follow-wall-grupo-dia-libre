@@ -38,7 +38,6 @@ namespace follow_wall
   {
     RCLCPP_INFO(get_logger(), "[%s] Activating from [%s] state...", get_name(), state.label().c_str());
     speed_pub_->on_activate();
-    last_time_ = now();
     return CallbackReturnT::SUCCESS;
   }
   CallbackReturnT
@@ -73,6 +72,9 @@ namespace follow_wall
   FollowWallLifeCycle::turn(int direction){
     geometry_msgs::msg::Twist msg;
     rclcpp::Time ts = now();
+    RCLCPP_INFO(get_logger(), "Time now: %f",ts.seconds());
+    RCLCPP_INFO(get_logger(), "Time started: %f",last_time_.seconds());
+    RCLCPP_INFO(get_logger(), "Difference: %f",(ts - last_time_).seconds());
 
     if ((ts - last_time_).seconds() < TIME_TURNING)
     { 
@@ -98,7 +100,6 @@ namespace follow_wall
 
     geometry_msgs::msg::Twist cmd;
 
-
     if (!state_)
     {
         if (!objectCenter && !is_first_turning_)
@@ -109,6 +110,10 @@ namespace follow_wall
         }
         else
         {
+          if (!is_first_turning_)
+          {
+            last_time_ = now();
+          }
           is_first_turning_ = true;
           cmd = turn(RIGHT);
         }
