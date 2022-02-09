@@ -28,6 +28,7 @@ namespace follow_wall
     "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
     speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); 
     state_ = 0;
+    is_turning_ = false;
             
     return CallbackReturnT::SUCCESS;
   }
@@ -37,7 +38,6 @@ namespace follow_wall
   {
     RCLCPP_INFO(get_logger(), "[%s] Activating from [%s] state...", get_name(), state.label().c_str());
     speed_pub_->on_activate();
-    last_time_ = now();
     return CallbackReturnT::SUCCESS;
   }
   CallbackReturnT
@@ -68,125 +68,115 @@ namespace follow_wall
     return CallbackReturnT::SUCCESS;
   }
 
-  void
+  geometry_msgs::msg::Twist 
+  FollowWallLifeCycle::turn(int direction){
+    geometry_msgs::msg::Twist msg;
+
+    if (direction == RIGHT){
+      msg.linear.x = 0;
+      msg.angular.z = -0.25;
+    }
+    else{
+      msg.linear.x = 0.25;
+      msg.angular.z = 0.25;
+    }
+    return msg;
+  }
+
+  void  
   FollowWallLifeCycle::do_work() {
     if (get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
       return;
     }
 
     geometry_msgs::msg::Twist cmd;
-    rclcpp::Time ts = now();
+    RCLCPP_INFO(get_logger(), "Measure Center [%f]", distance_to_center_);
+    RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
 
-
-    RCLCPP_INFO(get_logger(), "Node [%s] active", get_name());
-
-    if (state_ <= 1)
+    
+    if (!state_)
     {
-        if (!objectCenter)
+        if (distance_to_center_ > OBJECT_LIMIT && !is_turning_)
         {
           cmd.linear.x = 0.25;
           cmd.angular.z = 0;
-          if (state_)
-            state_ = 2;
         }
         else
         {
-          cmd.linear.x = 0;
-          cmd.angular.z = -0.25;
-          state_ = 1;
+          is_turning_ = true;
+          if (distance_to_left_ > (OBJECT_LIMIT - 0.01) && distance_to_left_ > (OBJECT_LIMIT + 0.01)){
+            cmd = turn(RIGHT);
+          }
+          else{
+            state_ = 1;
+            is_turning_ = false;
+          }
         }
     }
     else
-    {
-      if (!objectCenter && !objectLeft )
-      {
-        cmd.linear.x = 0;
-        cmd.angular.z = 0.25;
+    {  
+      if (is_turning_){
+        if (turn_to_ == LEFT){
+          if (distance_to_left_ > (OBJECT_LIMIT - 0.01) && distance_to_left_ > (OBJECT_LIMIT + 0.01)){
+            cmd = turn(LEFT);
+          }
+          else{
+            is_turning_ = false;
+          }
+        }
+        else{
+          if (distance_to_left_ > (OBJECT_LIMIT - 0.01) && distance_to_left_ > (OBJECT_LIMIT + 0.01)){
+            cmd = turn(RIGHT);
+          }
+          else{
+            is_turning_ = false;
+          }
+
+        }
       }
-      else if(objectCenter)
+      if (distance_to_center_ > OBJECT_LIMIT + 1 && distance_to_left_ > (OBJECT_LIMIT + 1))
       {
-        cmd.linear.x = 0;
-        cmd.angular.z = -0.25;
+        is_turning_ = true;
+        turn_to_ = LEFT;
+      }
+      else if(distance_to_center_ < OBJECT_LIMIT)
+      {
+        is_turning_ = true;
+        turn_to_ = RIGHT;
       }
       else
       {
+        is_turning_ = false;
         cmd.linear.x = 0.25;
         cmd.angular.z = 0;
       }
-    }
-    if ((ts - last_time_).seconds() > 2.0)
-    {
-      RCLCPP_INFO(get_logger(), "Two seconds");
-      last_time_ = ts;
+
     }
 
     speed_pub_->publish(cmd);
     //RCLCPP_INFO(get_logger(), "State [%d]", state_);
       
   }
-
-  bool
-  FollowWallLifeCycle::get_object_right(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    int laser_third = laser_data->ranges.size()/3;
-    int right_center = laser_third/2;
-    int right_sweep_start = right_center - SWEEPING_RANGE/2;
-    int right_sweep_end = right_center + SWEEPING_RANGE/2;
-    float mean_right = 0;
-
-    for (int i = right_sweep_start; i < right_sweep_end; i++)
-    {
-      mean_right = mean_right + laser_data->ranges[i];
-    }
-    mean_right = mean_right / SWEEPING_RANGE;
-    //RCLCPP_INFO(get_logger(), "Object right: %d", mean_right < OBJECT_LIMIT);
-  
-    return mean_right < OBJECT_LIMIT;
+  int
+  FollowWallLifeCycle::get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
+    return (M_PI/2 - laser_data->angle_min)/laser_data->angle_increment;
   }
 
-  bool
+  float
   FollowWallLifeCycle::get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    int center_center = laser_data->ranges.size()/2;
-    int center_sweep_start = center_center - SWEEPING_RANGE/2;
-    int center_sweep_end = center_center + SWEEPING_RANGE/2;
-    float mean_center = 0;
-
-    for (int i = center_sweep_start; i < center_sweep_end; i++)
-    {
-      mean_center = mean_center + laser_data->ranges[i];
-    }
-    mean_center = mean_center / SWEEPING_RANGE;
-    //RCLCPP_INFO(get_logger(), "Distance Center: %f", mean_center);
-    //RCLCPP_INFO(get_logger(), "Object Center: %d", mean_center < OBJECT_LIMIT);
-  
-
-    return mean_center < OBJECT_LIMIT;
+    return laser_data->ranges[laser_data->ranges.size()/2];
   }
 
-  bool
+  float
   FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    int laser_third = laser_data->ranges.size()/3;
-    int left_center = laser_data->ranges.size() - laser_third/2;
-    int left_sweep_start = left_center - SWEEPING_RANGE/2;
-    int left_sweep_end = left_center + SWEEPING_RANGE/2;
-    float mean_left = 0;
-
-    for (int i = left_sweep_start; i < left_sweep_end; i++)
-    {
-      mean_left = mean_left + laser_data->ranges[i];
-    }
-    mean_left = mean_left / SWEEPING_RANGE;
-
-    //RCLCPP_INFO(get_logger(), "Object Left: %d", mean_left < OBJECT_LIMIT);
-
-    return mean_left < OBJECT_LIMIT;
+    return laser_data->ranges[get_left_lecture(laser_data)];
   }
   
   void
   FollowWallLifeCycle::laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
   {    
-    objectLeft = get_object_left(msg);
-    objectCenter = get_object_center(msg);
-    objectRight = get_object_right(msg);
+    distance_to_left_ = get_object_left(msg);
+    distance_to_center_ = get_object_center(msg);
   }
 
 }
