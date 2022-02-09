@@ -28,6 +28,7 @@ namespace follow_wall
     "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
     speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); 
     state_ = 0;
+    is_first_turning_ = false;
             
     return CallbackReturnT::SUCCESS;
   }
@@ -68,36 +69,53 @@ namespace follow_wall
     return CallbackReturnT::SUCCESS;
   }
 
-  void
+  geometry_msgs::msg::Twist 
+  FollowWallLifeCycle::turn(int direction){
+    geometry_msgs::msg::Twist msg;
+    rclcpp::Time ts = now();
+
+    if ((ts - last_time_).seconds() < TIME_TURNING)
+    { 
+      RCLCPP_INFO(get_logger(), "Turning");
+      msg.linear.x = 0;
+      msg.angular.z = direction * 0.5; // right - left +
+      state_ = 0;
+      return msg;
+    }
+    else
+    {
+      is_first_turning_ = false;
+      state_ = 1;
+      return msg;
+    }
+  }
+
+  void  
   FollowWallLifeCycle::do_work() {
     if (get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
       return;
     }
 
     geometry_msgs::msg::Twist cmd;
-    rclcpp::Time ts = now();
 
 
-    RCLCPP_INFO(get_logger(), "Node [%s] active", get_name());
-
-    if (state_ <= 1)
+    if (!state_)
     {
-        if (!objectCenter)
+        if (!objectCenter && !is_first_turning_)
         {
+          RCLCPP_INFO(get_logger(), "Forward, state 1");
           cmd.linear.x = 0.25;
           cmd.angular.z = 0;
-          if (state_)
-            state_ = 2;
         }
         else
         {
-          cmd.linear.x = 0;
-          cmd.angular.z = -0.25;
-          state_ = 1;
+          is_first_turning_ = true;
+          cmd = turn(RIGHT);
         }
     }
     else
     {
+      //RCLCPP_INFO(get_logger(), "STATE 2");
       if (!objectCenter && !objectLeft )
       {
         cmd.linear.x = 0;
@@ -113,11 +131,6 @@ namespace follow_wall
         cmd.linear.x = 0.25;
         cmd.angular.z = 0;
       }
-    }
-    if ((ts - last_time_).seconds() > 2.0)
-    {
-      RCLCPP_INFO(get_logger(), "Two seconds");
-      last_time_ = ts;
     }
 
     speed_pub_->publish(cmd);

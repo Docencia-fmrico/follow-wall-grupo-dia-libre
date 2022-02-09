@@ -10,6 +10,9 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 
+#define RIGHT -1
+#define LEFT 1
+
 namespace follow_wall
 {
 
@@ -44,12 +47,16 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         bool objectCenter;
         int state_;
         rclcpp::Time last_time_;
+        bool is_first_turning_;
 
-        const float SWEEPING_RANGE = 200;
+        const float SWEEPING_RANGE = 50;
         const float OBJECT_LIMIT = 0.75;
+        const float TIME_TURNING = 7.0;
 
         // to understand how these functions work check this image
         // https://imgur.com/a/6N0uFbl
+
+        geometry_msgs::msg::Twist turn(int direction);
 
         bool get_object_right(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
         bool get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
