@@ -29,7 +29,10 @@ namespace follow_wall
     speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); 
     state_ = 0;
     is_turning_ = false;
+    turn_to_ = 1;
     prev_left_ = 0;
+    prev_mean_ = 0;
+    min_dist_ = 25.0;
     return CallbackReturnT::SUCCESS;
   }
   
@@ -74,11 +77,11 @@ namespace follow_wall
 
     if (direction == RIGHT){
       msg.linear.x = 0;
-      msg.angular.z = -0.25;
+      msg.angular.z = -0.15;
     }
     else{
       msg.linear.x = 0;
-      msg.angular.z = 0.25;
+      msg.angular.z = 0.15;
     }
     return msg;
   }
@@ -90,8 +93,8 @@ namespace follow_wall
     }
 
     geometry_msgs::msg::Twist cmd;
-    RCLCPP_INFO(get_logger(), "Measure Center [%f]", distance_to_center_);
-    RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
+    //RCLCPP_INFO(get_logger(), "Measure Center [%f]", distance_to_center_);
+    //RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
 
     if (distance_to_center_ == 0 || distance_to_left_ == 0){ // at the beggining laser seems empty so avoid that
       return;
@@ -99,71 +102,66 @@ namespace follow_wall
     
     if (!state_)
     {
-        if (distance_to_center_ > OBJECT_LIMIT && !is_turning_)
-        {
-          cmd.linear.x = 0.25;
-          cmd.angular.z = 0;
-        }
-        else
-        {
-          is_turning_ = true;
-          if (prev_left_ < distance_to_left_){
-            cmd = turn(RIGHT);
-            prev_left_ = distance_to_left_;
-          }
-          else{
-            state_ = 1;
-            is_turning_ = false;
-          }
-        }
-    }
-    else
-    {  
-      if (is_turning_){
-        if (turn_to_ == RIGHT){
-          if (prev_left_ < distance_to_left_){
-            cmd = turn(RIGHT);
-          }
-          else{
-            is_turning_ = false;
-          }
-        }
-        else{
-          if (prev_left_ > distance_to_left_){
-            cmd = turn(LEFT);
-          }
-          else{
-            is_turning_ = false;
-          }
-        }
+      if (distance_to_center_ > OBJECT_LIMIT && !is_turning_)
+      {
+        cmd.linear.x = 0.25;
+        cmd.angular.z = 0;
       }
-      else{
-        if (distance_to_center_ > OBJECT_LIMIT + 0.2 && distance_to_left_ > OBJECT_LIMIT + 0.2)
+      else
+      {
+        is_turning_ = true;
+        cmd = turn(turn_to_*RIGHT);
+        if (distance_to_left_ > OBJECT_LIMIT/2)
         {
-          is_turning_ = true;
-          turn_to_ = LEFT;
+          tend_mean_ += distance_to_left_;
+          tend_it_++;
         }
-        else if(distance_to_center_ < OBJECT_LIMIT - 0.2)
+        
+        if (tend_it_ == MAX_IT)
         {
-          is_turning_ = true;
-          turn_to_ = RIGHT;
+          RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
+          RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
+          RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
+          RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
+          tend_it_ = 0;
+          if (!prev_mean_)
+          {
+            prev_mean_ = tend_mean_ / MAX_IT;
+          }
+          else
+          {
+            if (prev_mean_ > tend_mean_ / MAX_IT)
+            {
+              prev_mean_ = tend_mean_ / MAX_IT;
+            }
+            else
+            {
+              turn_to_ *= -1;
+              cmd = turn(turn_to_*RIGHT);
+              if (distance_to_left_ <= min_dist_ + 0.05)
+              {
+                state_ = 2;
+              }
+            }
+          }
+          tend_mean_ = 0;
         }
-        else
+        if (min_dist_ > distance_to_left_)
         {
-          is_turning_ = false;
-          cmd.linear.x = 0.25;
-          cmd.angular.z = 0;
+          min_dist_ = distance_to_left_;
         }
       }
     }
+
+
 
     speed_pub_->publish(cmd);
     //RCLCPP_INFO(get_logger(), "State [%d]", state_);
       
   }
-  int
+  float
   FollowWallLifeCycle::get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    return (LEFT_DETECTION_ANGLE - laser_data->angle_min)/laser_data->angle_increment;
+    return laser_data->ranges.size()/2 + (LEFT_DETECTION_ANGLE)/laser_data->angle_increment;
   }
 
   float
@@ -180,8 +178,9 @@ namespace follow_wall
 
   float
   FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    int start = get_left_lecture(laser_data) - SWEEPING_RANGE/2;
-    int end = get_left_lecture(laser_data) + SWEEPING_RANGE/2;
+    
+    int start = (int)get_left_lecture(laser_data) - SWEEPING_RANGE/2;
+    int end = (int)get_left_lecture(laser_data) + SWEEPING_RANGE/2;
     float avg = 0;
     for (int i = start; i < end; i++)
     {

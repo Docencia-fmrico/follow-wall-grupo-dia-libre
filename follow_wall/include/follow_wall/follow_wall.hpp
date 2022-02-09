@@ -51,18 +51,24 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         rclcpp::Time last_time_;
         bool is_turning_;
         int turn_to_;
+        float tend_mean_;
+        float prev_mean_;
+        int tend_it_;
+        float min_dist_;
+        
 
-        const float SWEEPING_RANGE = 5;
-        const float OBJECT_LIMIT = 0.75;
+        const float SWEEPING_RANGE = 3;
+        const float OBJECT_LIMIT = 0.45;
+        const int MAX_IT = 20;
 
-        const float LEFT_DETECTION_ANGLE = 1.90;
+        const float LEFT_DETECTION_ANGLE = 1.57;
 
         // to understand how these functions work check this image
         // https://imgur.com/a/6N0uFbl
 
         geometry_msgs::msg::Twist turn(int direction);
         
-        int get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+        float get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
         float get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
         float get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
