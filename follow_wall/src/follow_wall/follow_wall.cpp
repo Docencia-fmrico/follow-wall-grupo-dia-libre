@@ -119,10 +119,10 @@ namespace follow_wall
         
         if (tend_it_ == MAX_IT)
         {
-          RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
-          RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
-          RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
-          RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
+          //RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
+          //RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
+          //RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
+          //RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
           tend_it_ = 0;
           if (!prev_mean_)
           {
@@ -141,12 +141,13 @@ namespace follow_wall
               if (distance_to_left_ <= min_dist_ + 0.05)
               {
                 state_ = 2;
+                is_turning_ = false;
               }
             }
           }
           tend_mean_ = 0;
         }
-        if (min_dist_ > distance_to_left_)
+        if (min_dist_ > tend_mean_/MAX_IT)
         {
           min_dist_ = distance_to_left_;
         }
