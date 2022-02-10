@@ -45,11 +45,13 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
 
         float distance_to_left_;
         float distance_to_center_;
+        float distance_max_range_;
+        float distance_upleft_;
         float prev_left_;
 
         int state_;
         rclcpp::Time last_time_;
-        bool is_turning_;
+        int is_turning_;
         int turn_to_;
         float tend_mean_;
         float prev_mean_;
@@ -57,9 +59,9 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         float min_dist_;
         
 
-        const float SWEEPING_RANGE = 3;
+        const float SWEEPING_RANGE = 4;
         const float OBJECT_LIMIT = 0.45;
-        const int MAX_IT = 20;
+        const int MAX_IT = 15;
 
         const float LEFT_DETECTION_ANGLE = 1.57;
 
@@ -67,13 +69,16 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         // https://imgur.com/a/6N0uFbl
 
         geometry_msgs::msg::Twist turn(int direction);
+        bool trend_algortihm(float dist);
         
         float get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
         float get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
         float get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+        float get_object_upleft(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
         void laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg);
+
 
 };
 }

@@ -28,9 +28,8 @@ namespace follow_wall
     "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
     speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10); 
     state_ = 0;
-    is_turning_ = false;
+    is_turning_ = 0;
     turn_to_ = 1;
-    prev_left_ = 0;
     prev_mean_ = 0;
     min_dist_ = 25.0;
     return CallbackReturnT::SUCCESS;
@@ -86,6 +85,60 @@ namespace follow_wall
     return msg;
   }
 
+  bool
+  FollowWallLifeCycle::trend_algortihm(float dist)
+  {
+    if (dist > OBJECT_LIMIT-0.05)
+    {
+      tend_mean_ += dist;
+      tend_it_++;
+    }
+      
+    if (tend_it_ == MAX_IT)
+    { 
+      //RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
+      //RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
+      //RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
+      //RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
+      tend_it_ = 0;
+      float trend = tend_mean_ / MAX_IT;
+      if (!prev_mean_)
+      {
+        prev_mean_ = trend;
+      }
+      else
+      {
+        if (prev_mean_ > trend)
+        {
+          prev_mean_ = trend;
+        }
+        else
+        {
+          turn_to_ *= -1;
+          if (dist <= min_dist_ + 0.05)
+          {
+            prev_mean_ = 0;
+            min_dist_ = 25.0;
+            return true;
+          }
+        }
+      }
+      if (min_dist_ > trend && trend > 0.0)
+      {
+        min_dist_ = trend;
+      }
+      tend_mean_ = 0;
+      if (min_dist_ > trend)
+      {
+        min_dist_ = trend;
+      }
+    }
+    
+    
+    return false;
+  }
+  
+
   void  
   FollowWallLifeCycle::do_work() {
     if (get_current_state().id() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
@@ -94,11 +147,11 @@ namespace follow_wall
 
     geometry_msgs::msg::Twist cmd;
     //RCLCPP_INFO(get_logger(), "Measure Center [%f]", distance_to_center_);
-    //RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
 
     if (distance_to_center_ == 0 || distance_to_left_ == 0){ // at the beggining laser seems empty so avoid that
       return;
     }
+    
     
     if (!state_)
     {
@@ -109,52 +162,46 @@ namespace follow_wall
       }
       else
       {
-        is_turning_ = true;
-        cmd = turn(turn_to_*RIGHT);
-        if (distance_to_left_ > OBJECT_LIMIT/2)
-        {
-          tend_mean_ += distance_to_left_;
-          tend_it_++;
-        }
         
-        if (tend_it_ == MAX_IT)
-        {
-          //RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
-          //RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
-          //RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
-          //RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
-          tend_it_ = 0;
-          if (!prev_mean_)
+          is_turning_ = 1;
+          cmd = turn(turn_to_*RIGHT);
+          if (trend_algortihm(distance_to_left_))
           {
-            prev_mean_ = tend_mean_ / MAX_IT;
+            is_turning_ = 0;
+            state_ = 1;
           }
-          else
-          {
-            if (prev_mean_ > tend_mean_ / MAX_IT)
-            {
-              prev_mean_ = tend_mean_ / MAX_IT;
-            }
-            else
-            {
-              turn_to_ *= -1;
-              cmd = turn(turn_to_*RIGHT);
-              if (distance_to_left_ <= min_dist_ + 0.05)
-              {
-                state_ = 2;
-                is_turning_ = false;
-              }
-            }
-          }
-          tend_mean_ = 0;
-        }
-        if (min_dist_ > tend_mean_/MAX_IT)
-        {
-          min_dist_ = distance_to_left_;
-        }
       }
     }
-
-
+    else
+    {
+      bool firstCase = distance_to_left_ < OBJECT_LIMIT && distance_to_center_ < OBJECT_LIMIT;
+      bool secondCase = distance_to_left_ > OBJECT_LIMIT*2 && distance_to_center_ > OBJECT_LIMIT*2;
+      RCLCPP_INFO(get_logger(), "First case [%d]", firstCase);
+      RCLCPP_INFO(get_logger(), "Second case [%d]", secondCase);
+      RCLCPP_INFO(get_logger(), "Is turning [%d]", is_turning_);
+      if (firstCase || secondCase || is_turning_)
+      {
+        if ((secondCase && distance_max_range_ > 1.5) || is_turning_ == 2)
+        {
+          is_turning_ = 2;
+          cmd = turn(turn_to_*RIGHT);
+          if (trend_algortihm(distance_upleft_))
+          {
+            is_turning_ = 0;
+          }
+        }
+        else
+        {  
+          cmd.linear.x = 0.25;
+          cmd.angular.z = 0;
+        }
+      }
+      else
+      {  
+        cmd.linear.x = 0.25;
+        cmd.angular.z = 0;
+      }
+    }
 
     speed_pub_->publish(cmd);
     //RCLCPP_INFO(get_logger(), "State [%d]", state_);
@@ -162,6 +209,7 @@ namespace follow_wall
   }
   float
   FollowWallLifeCycle::get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
+    //RCLCPP_INFO(get_logger(), "Max [%f]", laser_data->ranges[laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/2]);
     return laser_data->ranges.size()/2 + (LEFT_DETECTION_ANGLE)/laser_data->angle_increment;
   }
 
@@ -189,12 +237,28 @@ namespace follow_wall
     }
     return avg/SWEEPING_RANGE;
   }
+
+
+  float
+  FollowWallLifeCycle::get_object_upleft(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
+    
+    int start = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/2 - SWEEPING_RANGE/2;
+    int end = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/2;
+    float avg = 0;
+    for (int i = start; i < end; i++)
+    {
+      avg = laser_data->ranges[i] + avg;
+    }
+    return avg/SWEEPING_RANGE;
+  }
   
   void
   FollowWallLifeCycle::laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
   {    
     distance_to_left_ = get_object_left(msg);
     distance_to_center_ = get_object_center(msg);
+    distance_max_range_ = msg->ranges[msg->ranges.size()-1];
+    distance_upleft_ = get_object_upleft(msg);
   }
 
 }
