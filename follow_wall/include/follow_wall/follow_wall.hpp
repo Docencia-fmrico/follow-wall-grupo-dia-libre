@@ -68,7 +68,7 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         // to understand how these functions work check this image
         // https://imgur.com/a/6N0uFbl
 
-        geometry_msgs::msg::Twist turn(int direction);
+        geometry_msgs::msg::Twist turn(int direction, float wvel);
         bool trend_algortihm(float dist);
         
         float get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);

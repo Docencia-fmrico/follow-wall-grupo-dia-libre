@@ -71,16 +71,16 @@ namespace follow_wall
   }
 
   geometry_msgs::msg::Twist 
-  FollowWallLifeCycle::turn(int direction){
+  FollowWallLifeCycle::turn(int direction, float wvel){
     geometry_msgs::msg::Twist msg;
 
     if (direction == RIGHT){
       msg.linear.x = 0;
-      msg.angular.z = -0.15;
+      msg.angular.z = -wvel;
     }
     else{
       msg.linear.x = 0;
-      msg.angular.z = 0.15;
+      msg.angular.z = wvel;
     }
     return msg;
   }
@@ -88,7 +88,7 @@ namespace follow_wall
   bool
   FollowWallLifeCycle::trend_algortihm(float dist)
   {
-    if (dist > OBJECT_LIMIT-0.05)
+    if (dist > 0.1)
     {
       tend_mean_ += dist;
       tend_it_++;
@@ -96,10 +96,10 @@ namespace follow_wall
       
     if (tend_it_ == MAX_IT)
     { 
-      //RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
-      //RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
-      //RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
-      //RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
+      RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
+      RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
+      RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
+      RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
       tend_it_ = 0;
       float trend = tend_mean_ / MAX_IT;
       if (!prev_mean_)
@@ -117,6 +117,7 @@ namespace follow_wall
           turn_to_ *= -1;
           if (dist <= min_dist_ + 0.05)
           {
+            RCLCPP_INFO(get_logger(), "Finish");
             prev_mean_ = 0;
             min_dist_ = 25.0;
             return true;
@@ -164,10 +165,11 @@ namespace follow_wall
       {
         
           is_turning_ = 1;
-          cmd = turn(turn_to_*RIGHT);
+          cmd = turn(turn_to_*RIGHT, 0.15);
           if (trend_algortihm(distance_to_left_))
           {
             is_turning_ = 0;
+            turn_to_ = -1;
             state_ = 1;
           }
       }
@@ -176,18 +178,20 @@ namespace follow_wall
     {
       bool firstCase = distance_to_left_ < OBJECT_LIMIT && distance_to_center_ < OBJECT_LIMIT;
       bool secondCase = distance_to_left_ > OBJECT_LIMIT*2 && distance_to_center_ > OBJECT_LIMIT*2;
-      RCLCPP_INFO(get_logger(), "First case [%d]", firstCase);
-      RCLCPP_INFO(get_logger(), "Second case [%d]", secondCase);
-      RCLCPP_INFO(get_logger(), "Is turning [%d]", is_turning_);
+      //RCLCPP_INFO(get_logger(), "First case [%d]", firstCase);
+      //RCLCPP_INFO(get_logger(), "Second case [%d]", secondCase);
+      //RCLCPP_INFO(get_logger(), "Is turning [%d]", is_turning_);
       if (firstCase || secondCase || is_turning_)
       {
-        if ((secondCase && distance_max_range_ > 1.5) || is_turning_ == 2)
+        if ((secondCase && distance_max_range_ > 1.5 && distance_upleft_ > OBJECT_LIMIT) || is_turning_ == 2)
         {
           is_turning_ = 2;
-          cmd = turn(turn_to_*RIGHT);
+          cmd = turn(turn_to_*RIGHT, 0.1);
           if (trend_algortihm(distance_upleft_))
           {
             is_turning_ = 0;
+            state_ = 0;
+            turn_to_ = 1;
           }
         }
         else
@@ -242,8 +246,8 @@ namespace follow_wall
   float
   FollowWallLifeCycle::get_object_upleft(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
     
-    int start = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/2 - SWEEPING_RANGE/2;
-    int end = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/2;
+    int start = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/1.35 - SWEEPING_RANGE/2;
+    int end = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/1.35 + SWEEPING_RANGE/2;
     float avg = 0;
     for (int i = start; i < end; i++)
     {
