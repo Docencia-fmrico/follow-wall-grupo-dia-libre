@@ -152,75 +152,38 @@ namespace follow_wall
     if (distance_to_center_ == 0 || distance_to_left_ == 0){ // at the beggining laser seems empty so avoid that
       return;
     }
-    
-    
-    if (!state_)
-    {
-      if (distance_to_center_ > OBJECT_LIMIT && !is_turning_)
-      {
-        cmd.linear.x = 0.25;
-        cmd.angular.z = 0;
-      }
-      else
-      {
+  
         
-          is_turning_ = 1;
-          cmd = turn(turn_to_*RIGHT, 0.15);
-          if (trend_algortihm(distance_to_left_))
-          {
-            is_turning_ = 0;
-            state_ = 1;
-          }
+    if (distance_to_center_ < OBJECT_LIMIT || is_turning_ == 1)
+    {
+      if (is_turning_ != 1)
+        turn_to_ = 1;
+      is_turning_ = 1;
+      cmd = turn(turn_to_*RIGHT, 0.2);
+      count_it_rot_++;
+      if (count_it_rot_ >= 80)
+      {
+        if (trend_algortihm(distance_to_left_))
+        {
+          count_it_rot_ = 0;
+          is_turning_ = 0;
+          state_ = 1;
+        }
       }
     }
     else
     {
-      bool firstCase = distance_to_center_ < OBJECT_LIMIT;
-      bool secondCase = distance_to_left_ > OBJECT_LIMIT*2 && distance_to_center_ > OBJECT_LIMIT*2;
-
-      if (firstCase || secondCase || is_turning_)
+      if (state_)
       {
-        if ((secondCase && distance_max_range_ > 1.45 && distance_upleft_ > OBJECT_LIMIT) || is_turning_ == 2)
-        {
-          if (is_turning_ != 2)
-            turn_to_ = -1;
-          is_turning_ = 2;
-          cmd = turn(turn_to_*RIGHT, 0.1);
-          if (trend_algortihm(distance_upleft_))
-          {
-            is_turning_ = 0;
-            state_ = 1;
-          }
-        }
-        else if (firstCase || is_turning_ == 3)
-        {
-          if (is_turning_ != 3)
-            turn_to_ = 1;
-          is_turning_ = 3;
-          cmd = turn(turn_to_*RIGHT, 0.2);
-          count_it_rot_++;
-          if (count_it_rot_ >= 80)
-          {
-            if (trend_algortihm(distance_to_left_))
-            {
-              count_it_rot_ = 0;
-              is_turning_ = 0;
-              state_ = 1;
-            }
-          }
-        }
-        else
-        {  
-          cmd.linear.x = 0.25 - (distance_to_left_ - OBJECT_LIMIT)/2;
-          cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT-0.1) + (distance_to_left_ - OBJECT_LIMIT-0.1 - prev_error_)/10;
-        }
-      }
-      else
-      {  
         cmd.linear.x = 0.25 - (distance_to_left_ - OBJECT_LIMIT)/2;
         cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT-0.1) + (distance_to_left_ - OBJECT_LIMIT-0.1 - prev_error_)/10;
+        prev_error_ = distance_to_left_ - OBJECT_LIMIT;
       }
-      prev_error_ = distance_to_left_ - OBJECT_LIMIT;
+      else
+      {
+        cmd.linear.x = 0.25;
+        cmd.angular.z = 0;
+      }
     }
 
     speed_pub_->publish(cmd);
