@@ -31,7 +31,7 @@ namespace follow_wall
     is_turning_ = 0;
     turn_to_ = 1;
     prev_mean_ = 0;
-    min_dist_ = 25.0;
+    min_dist_ = MAX_DIST_RANGE;
     count_it_trend_ = 0;
     prev_error_ = 0;
     return CallbackReturnT::SUCCESS;
@@ -90,7 +90,7 @@ namespace follow_wall
   bool
   FollowWallLifeCycle::trend_algortihm(float dist)
   {
-    if (2.0 > dist > 0.1)
+    if (TREND_MAX_DIST > dist > TREND_MIN_DIST)
     {
       tend_mean_ += dist;
       tend_it_++;
@@ -98,10 +98,10 @@ namespace follow_wall
       
     if (tend_it_ == MAX_IT)
     { 
-      RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
-      RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
-      RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
-      RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
+      //RCLCPP_INFO(get_logger(), "Measure Left [%f]", distance_to_left_);
+      //RCLCPP_INFO(get_logger(), "Min Left [%f]", min_dist_);
+      //RCLCPP_INFO(get_logger(), "Prev Mean [%f]", prev_mean_);
+      //RCLCPP_INFO(get_logger(), "Tend Mean [%f]", tend_mean_/MAX_IT);
       tend_it_ = 0;
       float trend = tend_mean_ / MAX_IT;
       if (!prev_mean_)
@@ -118,17 +118,17 @@ namespace follow_wall
         {
           turn_to_ *= -1;
           count_it_trend_++;
-          if (dist <= min_dist_ + 0.05 || count_it_trend_ == 5)
+          if (dist <= min_dist_ + DIST_VARIATION || count_it_trend_ == MAX_RECALCULATIONS)
           {
-            RCLCPP_INFO(get_logger(), "Finish");
+            //RCLCPP_INFO(get_logger(), "Finish");
             count_it_trend_ = 0;
             prev_mean_ = 0;
-            min_dist_ = 25.0;
+            min_dist_ = MAX_DIST_RANGE;
             return true;
           }
         }
       }
-      if (min_dist_ > trend && trend > 0.0)
+      if (min_dist_ > trend && trend > FLOAT_ZERO)
       {
         min_dist_ = trend;
       }
@@ -158,10 +158,12 @@ namespace follow_wall
     {
       if (is_turning_ != 1)
         turn_to_ = 1;
+
       is_turning_ = 1;
       cmd = turn(turn_to_*RIGHT, 0.2);
+      
       count_it_rot_++;
-      if (count_it_rot_ >= 80)
+      if (count_it_rot_ >= MAX_ROTATIONS)
       {
         if (trend_algortihm(distance_to_left_))
         {
@@ -175,13 +177,13 @@ namespace follow_wall
     {
       if (state_)
       {
-        cmd.linear.x = 0.25 - (distance_to_left_ - OBJECT_LIMIT)/2;
-        cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT-0.1) + (distance_to_left_ - OBJECT_LIMIT-0.1 - prev_error_)/10;
+        cmd.linear.x = LINEAR_SPEED - (distance_to_left_ - OBJECT_LIMIT)/2;
+        cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT-0.1) + (distance_to_left_ - OBJECT_LIMIT-0.1 - prev_error_)*ANGULAR_KD;
         prev_error_ = distance_to_left_ - OBJECT_LIMIT;
       }
       else
       {
-        cmd.linear.x = 0.25;
+        cmd.linear.x = LINEAR_SPEED;
         cmd.angular.z = 0;
       }
     }
@@ -192,7 +194,6 @@ namespace follow_wall
   }
   float
   FollowWallLifeCycle::get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    //RCLCPP_INFO(get_logger(), "Max [%f]", laser_data->ranges[laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/2]);
     return laser_data->ranges.size()/2 + (LEFT_DETECTION_ANGLE)/laser_data->angle_increment;
   }
 
@@ -220,28 +221,12 @@ namespace follow_wall
     }
     return avg/SWEEPING_RANGE;
   }
-
-
-  float
-  FollowWallLifeCycle::get_object_upleft(sensor_msgs::msg::LaserScan::SharedPtr laser_data){
-    
-    int start = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/1.3 - SWEEPING_RANGE/2;
-    int end = (int)laser_data->ranges.size()/2 + ((LEFT_DETECTION_ANGLE)/laser_data->angle_increment)/1.3 + SWEEPING_RANGE/2;
-    float avg = 0;
-    for (int i = start; i < end; i++)
-    {
-      avg = laser_data->ranges[i] + avg;
-    }
-    return avg/SWEEPING_RANGE;
-  }
   
   void
   FollowWallLifeCycle::laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
   {    
     distance_to_left_ = get_object_left(msg);
     distance_to_center_ = get_object_center(msg);
-    distance_max_range_ = msg->ranges[msg->ranges.size()-1];
-    distance_upleft_ = get_object_upleft(msg);
   }
 
 }
