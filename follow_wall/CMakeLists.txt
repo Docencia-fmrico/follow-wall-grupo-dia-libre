@@ -28,7 +28,7 @@ add_library(${PROJECT_NAME} SHARED src/follow_wall/follow_wall.cpp)
 
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
 
-add_executable(follow_wall_node
+add_executable(follow_wall_node 
 src/follow_wall_node.cpp)
 
 ament_target_dependencies(follow_wall_node ${dependencies})
