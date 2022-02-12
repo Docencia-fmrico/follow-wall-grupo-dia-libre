@@ -60,6 +60,20 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         int count_it_trend_;
         int count_it_rot_;
         
+        const float TREND_MAX_DIST = 2.0;
+        const float TREND_MIN_DIST = 0.1;
+
+        const float DIST_VARIATION = 0.05;
+
+        const int MAX_RECALCULATIONS = 5;
+        const int MAX_ROTATIONS = 80;
+
+        const float FLOAT_ZERO = 0.0;
+
+        const float LINEAR_SPEED = 0.25;
+
+        const float ANGULAR_KP = 0.1;
+        const float ANGULAR_KD = 10;
 
         const float SWEEPING_RANGE = 6;
         const float OBJECT_LIMIT = 0.45;
