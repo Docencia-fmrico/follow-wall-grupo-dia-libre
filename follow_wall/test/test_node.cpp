@@ -1,5 +1,20 @@
+// Copyright 2022 Grupo Día Libre
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include <memory>
+#include <vector>
+
 #include "lifecycle_msgs/msg/state.hpp"
 #include "gtest/gtest.h"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
@@ -9,15 +24,14 @@
 #include "test_ci/TestNode.hpp"
 #include "follow_wall/follow_wall.hpp"
 
-//#include hay que incluir la cabecera de nuestro nodo para poder usar las clases y funciones
+// #include hay que incluir la cabecera de nuestro nodo para poder usar las clases y funciones
 
 
-//preguntas, pasarcosas por parametrs, para el ts
-//lo de partir el laser en 3
-//
-TEST( test_node, test_laser_positions)
+// preguntas, pasarcosas por parametrs, para el ts
+// lo de partir el laser en 3
+
+TEST(test_node, test_laser_positions)
 {
-
   auto node = std::make_shared<FollowWallLifeCycle>();
 
   node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
@@ -26,17 +40,17 @@ TEST( test_node, test_laser_positions)
 
   sensor_msgs::msg::LaserScan laser;
 
-  //estableceemos la cabecera del laser con valores adecuados
-  laser.header.stamp = node->now(); 
+  // estableceemos la cabecera del laser con valores adecuados
+  laser.header.stamp = node->now();
   laser.angle_min = -M_PI;
   laser.angle_max = M_PI;
 
   laser.angle_increment = 2.0 * M_PI / 3.0f;
 
-  //establecemos que el rango de barrido se divida en tres sectores
-  laser.ranges = std::vector<float>( 3, 15.0f);
+  // establecemos que el rango de barrido se divida en tres sectores
+  laser.ranges = std::vector<float>(3, 15.0f);
 
-  //en el primer campo rellenamos con un valor para simular una detección de laser
+  // en el primer campo rellenamos con un valor para simular una detección de laser
   laser.ranges[0] = 0.3f;
 
   node->mean_left = laser.ranges[0];
@@ -58,4 +72,3 @@ int main(int argc, char ** argv)
 
   return RUN_ALL_TESTS();
 }
-3
