@@ -33,6 +33,7 @@ namespace follow_wall
     prev_mean_ = 0;
     min_dist_ = 25.0;
     count_it_trend_ = 0;
+    prev_error_ = 0;
     return CallbackReturnT::SUCCESS;
   }
   
@@ -87,7 +88,7 @@ namespace follow_wall
   }
 
   bool
-  FollowWallLifeCycle::trend_algortihm(float dist, int flag)
+  FollowWallLifeCycle::trend_algortihm(float dist)
   {
     if (2.0 > dist > 0.1)
     {
@@ -109,23 +110,25 @@ namespace follow_wall
       }
       else
       {
-        if ((prev_mean_ > trend && !flag) || (prev_mean_ < trend && flag))
+        if (prev_mean_ > trend)
         {
           prev_mean_ = trend;
         }
         else
         {
           turn_to_ *= -1;
-          if ((dist <= min_dist_ + 0.05 && !flag) || (dist >= min_dist_ - 0.05 && flag))
+          count_it_trend_++;
+          if (dist <= min_dist_ + 0.05 || count_it_trend_ == 5)
           {
             RCLCPP_INFO(get_logger(), "Finish");
+            count_it_trend_ = 0;
             prev_mean_ = 0;
             min_dist_ = 25.0;
             return true;
           }
         }
       }
-      if ((min_dist_ > trend && trend > 0.0 && !flag) || (min_dist_ < trend && trend > 0.0 && flag))
+      if (min_dist_ > trend && trend > 0.0)
       {
         min_dist_ = trend;
       }
@@ -163,7 +166,7 @@ namespace follow_wall
         
           is_turning_ = 1;
           cmd = turn(turn_to_*RIGHT, 0.15);
-          if (trend_algortihm(distance_to_left_, 0))
+          if (trend_algortihm(distance_to_left_))
           {
             is_turning_ = 0;
             state_ = 1;
@@ -183,7 +186,7 @@ namespace follow_wall
             turn_to_ = -1;
           is_turning_ = 2;
           cmd = turn(turn_to_*RIGHT, 0.1);
-          if (trend_algortihm(distance_upleft_, 0))
+          if (trend_algortihm(distance_upleft_))
           {
             is_turning_ = 0;
             state_ = 1;
@@ -195,13 +198,12 @@ namespace follow_wall
             turn_to_ = 1;
           is_turning_ = 3;
           cmd = turn(turn_to_*RIGHT, 0.2);
-          count_it_trend_++;
-          if (count_it_trend_ >= 80)
+          count_it_rot_++;
+          if (count_it_rot_ >= 80)
           {
-            if (trend_algortihm(distance_to_left_, 0))
+            if (trend_algortihm(distance_to_left_))
             {
-              RCLCPP_INFO(get_logger(), "State 1-2");
-              count_it_trend_ = 0;
+              count_it_rot_ = 0;
               is_turning_ = 0;
               state_ = 1;
             }
@@ -209,15 +211,16 @@ namespace follow_wall
         }
         else
         {  
-          cmd.linear.x = 0.25;
-          cmd.angular.z = 0;
+          cmd.linear.x = 0.25 - (distance_to_left_ - OBJECT_LIMIT)/2;
+          cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT-0.1) + (distance_to_left_ - OBJECT_LIMIT-0.1 - prev_error_)/10;
         }
       }
       else
       {  
-        cmd.linear.x = 0.25;
-        cmd.angular.z = 0;
+        cmd.linear.x = 0.25 - (distance_to_left_ - OBJECT_LIMIT)/2;
+        cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT-0.1) + (distance_to_left_ - OBJECT_LIMIT-0.1 - prev_error_)/10;
       }
+      prev_error_ = distance_to_left_ - OBJECT_LIMIT;
     }
 
     speed_pub_->publish(cmd);

@@ -47,7 +47,7 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         float distance_to_center_;
         float distance_max_range_;
         float distance_upleft_;
-        float prev_left_;
+        float prev_error_;
 
         int state_;
         rclcpp::Time last_time_;
@@ -58,6 +58,7 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         int tend_it_;
         float min_dist_;
         int count_it_trend_;
+        int count_it_rot_;
         
 
         const float SWEEPING_RANGE = 6;
@@ -70,7 +71,7 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
         // https://imgur.com/a/6N0uFbl
 
         geometry_msgs::msg::Twist turn(int direction, float wvel);
-        bool trend_algortihm(float dist, int flag);
+        bool trend_algortihm(float dist);
         
         float get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
