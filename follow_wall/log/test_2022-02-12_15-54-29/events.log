@@ -1,0 +1,6 @@
+[0.000000] (-) TimerEvent: {}
+[0.000335] (follow_wall) JobQueued: {'identifier': 'follow_wall', 'dependencies': OrderedDict([('follow_wall', '/home/chuismi/Desktop/robotica/tercero/segundocuat/planificacion/psc_ws/src/follow-wall-grupo-dia-libre/follow_wall/install/follow_wall')])}
+[0.000429] (follow_wall) JobStarted: {'identifier': 'follow_wall'}
+[0.000919] (follow_wall) StderrLine: {'line': b'Traceback (most recent call last):\n  File "/usr/lib/python3/dist-packages/colcon_core/executor/__init__.py", line 91, in __call__\n    rc = await self.task(*args, **kwargs)\n  File "/usr/lib/python3/dist-packages/colcon_core/task/__init__.py", line 93, in __call__\n    return await task_method(*args, **kwargs)\n  File "/usr/lib/python3/dist-packages/colcon_ros/task/ament_cmake/test.py", line 29, in test\n    return await extension.test()\n  File "/usr/lib/python3/dist-packages/colcon_cmake/task/cmake/test.py", line 45, in test\n    assert os.path.exists(args.build_base), \\\nAssertionError: Has this package been built before?\n'}
+[0.001720] (follow_wall) JobEnded: {'identifier': 'follow_wall', 'rc': 1}
+[0.011461] (-) EventReactorShutdown: {}
