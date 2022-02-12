@@ -39,16 +39,18 @@ class FollowWallLifeCycle : public rclcpp_lifecycle::LifecycleNode
 
         void do_work();
 
-    private:
-        rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
-        rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr speed_pub_;
 
+    protected: 
         float distance_to_left_;
         float distance_to_center_;
         float distance_max_range_;
         float distance_upleft_;
         float prev_error_;
 
+    private:
+        rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
+        rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr speed_pub_;
+        
         int state_;
         rclcpp::Time last_time_;
         int is_turning_;
