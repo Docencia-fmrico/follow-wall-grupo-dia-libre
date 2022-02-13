@@ -31,7 +31,6 @@ ament_target_dependencies(${PROJECT_NAME} ${dependencies})
 add_executable(follow_wall_node
 src/follow_wall_node.cpp)
 
-ament_target_dependencies(follow_wall_node ${dependencies})
 target_link_libraries(follow_wall_node ${PROJECT_NAME})
 
 install(TARGETS
@@ -52,4 +51,7 @@ endif()
 
 ament_export_dependencies(${dependencies})
 ament_package()
+
+ament_add_gtest(test_node test/test_node.cpp)
+target_link_libraries(test_node ${PROJECT_NAME})
 
