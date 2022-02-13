@@ -47,14 +47,6 @@ void
 set_search()
 {
   state_ = 1;
-  RCLCPP_INFO( get_logger()," state:  \n" + std::to_string(state_) + "\n");
-}
-
-void
-get_test_values()
-{
-  RCLCPP_INFO( get_logger(),"left:  \n" + std::to_string(distance_to_left_) + "\n");
-  RCLCPP_INFO( get_logger(),"right: \n" + std::to_string(distance_to_left_) + "\n");
 }
 
 void
@@ -63,31 +55,25 @@ set_test_values(float left_value, float center_value)
   distance_to_left_ = left_value;
   distance_to_center_ = center_value;
 
-  RCLCPP_INFO( get_logger(),"left:  \n" + std::to_string(distance_to_left_) + "\n");
-  RCLCPP_INFO( get_logger(),"right: \n" + std::to_string(distance_to_left_) + "\n");
-}
-
-void
-laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
-{
-  distance_to_left_ = test_left_;
-  distance_to_center_ = test_center_;
-
 }
 
 int
-get_turning()
+get_turning_right()
 {
-
-  RCLCPP_INFO( get_logger(),"\n" + std::to_string(is_turning_) + "\n");
   return is_turning_;
 }
-  
+
+int
+get_turning_left()
+{
+  return turning_left_;
+}
 };
 
 
-TEST(test_node, test_node)
+TEST(test_node, right_turn_test)
 {
+
   auto node = std::make_shared<FollowWallLifeCycleTest>();
 
   node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
@@ -100,10 +86,50 @@ TEST(test_node, test_node)
 
   node->do_work();
 
-  node->get_test_values();
+  ASSERT_EQ(node->get_turning_right(), 1);
 
-  ASSERT_EQ(node->get_turning(), 1);
 }
+
+TEST(test_node, straight_test)
+{
+
+  auto node = std::make_shared<FollowWallLifeCycleTest>();
+
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+
+  node->set_search();
+
+  node->set_test_values(0.4, 0.8);
+
+  node->do_work();
+
+  ASSERT_EQ(node->get_turning_right(), 0);
+  ASSERT_EQ(node->get_turning_left(), 0);
+
+}
+
+
+TEST(test_node, left_turn_test)
+{
+
+  auto node = std::make_shared<FollowWallLifeCycleTest>();
+
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+
+  node->set_search();
+
+  node->set_test_values(12, 12);
+
+  node->do_work();
+
+  ASSERT_EQ(node->get_turning_left(), 1);
+
+}
+
 
 int main(int argc, char ** argv)
 {

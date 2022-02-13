@@ -60,6 +60,7 @@ protected:
   float prev_error_;
   int is_turning_;
   int state_;
+  int turning_left_;
 
   float get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
   float get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
