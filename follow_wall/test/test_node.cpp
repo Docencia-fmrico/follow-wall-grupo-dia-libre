@@ -21,48 +21,89 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
-#include "test_ci/TestNode.hpp"
 #include "follow_wall/follow_wall.hpp"
 
-// #include hay que incluir la cabecera de nuestro nodo para poder usar las clases y funciones
-
-
-// preguntas, pasarcosas por parametrs, para el ts
-// lo de partir el laser en 3
-
-TEST(test_node, test_laser_positions)
+class FollowWallLifeCycleTest : public follow_wall::FollowWallLifeCycle
 {
-  auto node = std::make_shared<FollowWallLifeCycle>();
+private:
+  float test_left_;
+  float test_center_;
+
+public:
+  void
+  set_search()
+  {
+    state_ = 1;
+  }
+
+  void
+  set_test_values(float left_value, float center_value)
+  {
+    distance_to_left_ = left_value;
+    distance_to_center_ = center_value;
+  }
+  int
+  get_turning_right()
+  {
+    return is_turning_;
+  }
+  int
+  get_turning_left()
+  {
+    return turning_left_;
+  }
+};
+
+TEST(test_node, right_turn_test)
+{
+  auto node = std::make_shared<FollowWallLifeCycleTest>();
 
   node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+
   node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
+  node->set_search();
 
-  sensor_msgs::msg::LaserScan laser;
+  node->set_test_values(0.4, 0.4);
 
-  // estableceemos la cabecera del laser con valores adecuados
-  laser.header.stamp = node->now();
-  laser.angle_min = -M_PI;
-  laser.angle_max = M_PI;
+  node->do_work();
 
-  laser.angle_increment = 2.0 * M_PI / 3.0f;
+  ASSERT_EQ(node->get_turning_right(), 1);
+}
 
-  // establecemos que el rango de barrido se divida en tres sectores
-  laser.ranges = std::vector<float>(3, 15.0f);
+TEST(test_node, straight_test)
+{
+  auto node = std::make_shared<FollowWallLifeCycleTest>();
 
-  // en el primer campo rellenamos con un valor para simular una detección de laser
-  laser.ranges[0] = 0.3f;
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
 
-  node->mean_left = laser.ranges[0];
-  node->mean_center = laser.ranges[1];
-  node->mean_right = laser.ranges[2];
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 
+  node->set_search();
 
-  auto vel_sub_ = create_subscription<geometry_msgs::msg::Twist>(
-    "/nav_vel", 10, std::bind(NULL, this, _1));
+  node->set_test_values(0.4, 0.8);
 
+  node->do_work();
 
-  ASSERT_LT(0, vel_pub.cmd.angular.z);
+  ASSERT_EQ(node->get_turning_right(), 0);
+  ASSERT_EQ(node->get_turning_left(), 0);
+}
+
+TEST(test_node, left_turn_test)
+{
+  auto node = std::make_shared<FollowWallLifeCycleTest>();
+
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
+
+  node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
+
+  node->set_search();
+
+  node->set_test_values(12, 12);
+
+  node->do_work();
+
+  ASSERT_EQ(node->get_turning_left(), 1);
 }
 
 int main(int argc, char ** argv)

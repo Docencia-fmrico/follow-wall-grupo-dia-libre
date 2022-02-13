@@ -58,14 +58,18 @@ protected:
   float distance_max_range_;
   float distance_upleft_;
   float prev_error_;
+  int is_turning_;
+  int state_;
+  int turning_left_;
+
+  float get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+  float get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
   rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::Twist>::SharedPtr speed_pub_;
   rclcpp::Time last_time_;
 
-  int state_;
-  int is_turning_;
   int turn_to_;
   float tend_mean_;
   float prev_mean_;
@@ -94,8 +98,6 @@ private:
   geometry_msgs::msg::Twist turn(int direction, float wvel);
   bool trend_algortihm(float dist);
   float get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
-  float get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
-  float get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
   float get_object_upleft(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
   void laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg);
