@@ -1,11 +1,3 @@
-// #include hay que incluir la cabecera de nuestro nodo para poder usar las clases y funciones
-
-
-// preguntas, pasarcosas por parametrs, para el ts
-// lo de partir el laser en 3
-
-
-
 // Copyright 2022 Grupo Día Libre
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,49 +23,39 @@
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "follow_wall/follow_wall.hpp"
 
-
-
 class FollowWallLifeCycleTest : public follow_wall::FollowWallLifeCycle
 {
-
 private:
   float test_left_;
   float test_center_;
 
-
 public:
+  void
+  set_search()
+  {
+    state_ = 1;
+  }
 
-void
-set_search()
-{
-  state_ = 1;
-}
-
-void
-set_test_values(float left_value, float center_value)
-{
-  distance_to_left_ = left_value;
-  distance_to_center_ = center_value;
-
-}
-
-int
-get_turning_right()
-{
-  return is_turning_;
-}
-
-int
-get_turning_left()
-{
-  return turning_left_;
-}
+  void
+  set_test_values(float left_value, float center_value)
+  {
+    distance_to_left_ = left_value;
+    distance_to_center_ = center_value;
+  }
+  int
+  get_turning_right()
+  {
+    return is_turning_;
+  }
+  int
+  get_turning_left()
+  {
+    return turning_left_;
+  }
 };
-
 
 TEST(test_node, right_turn_test)
 {
-
   auto node = std::make_shared<FollowWallLifeCycleTest>();
 
   node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
@@ -87,12 +69,10 @@ TEST(test_node, right_turn_test)
   node->do_work();
 
   ASSERT_EQ(node->get_turning_right(), 1);
-
 }
 
 TEST(test_node, straight_test)
 {
-
   auto node = std::make_shared<FollowWallLifeCycleTest>();
 
   node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
@@ -107,13 +87,10 @@ TEST(test_node, straight_test)
 
   ASSERT_EQ(node->get_turning_right(), 0);
   ASSERT_EQ(node->get_turning_left(), 0);
-
 }
-
 
 TEST(test_node, left_turn_test)
 {
-
   auto node = std::make_shared<FollowWallLifeCycleTest>();
 
   node->trigger_transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE);
@@ -127,9 +104,7 @@ TEST(test_node, left_turn_test)
   node->do_work();
 
   ASSERT_EQ(node->get_turning_left(), 1);
-
 }
-
 
 int main(int argc, char ** argv)
 {
@@ -138,4 +113,3 @@ int main(int argc, char ** argv)
 
   return RUN_ALL_TESTS();
 }
-

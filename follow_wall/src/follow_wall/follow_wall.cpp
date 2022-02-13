@@ -181,11 +181,10 @@ FollowWallLifeCycle::do_work()
         (distance_to_left_ - OBJECT_LIMIT - 0.1 - prev_error_) * ANGULAR_KD;
       prev_error_ = distance_to_left_ - OBJECT_LIMIT;
 
-      if (distance_to_left_ -  OBJECT_LIMIT > 1){
+      if (distance_to_left_ - OBJECT_LIMIT > 1) {
         turning_left_ = 1;
-      }
-      else{
-        turning_left_ = 0;        
+      } else {
+        turning_left_ = 0;
       }
     } else {
       cmd.linear.x = LINEAR_SPEED;
