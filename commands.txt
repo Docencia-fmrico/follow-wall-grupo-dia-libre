@@ -1,0 +1,30 @@
+ros2 cli 
+ros2 node list
+ros2 node info
+ros2 run
+ros2 pkg list   - paquetes instalados
+ros2 interface list  - todos los topics
+ros2 interface list -m     - muestra los /msg/
+ros2 interface show std_msgs/msg/String   - muestra lo que hay en ese tipo de mensaje
+ros2 topic list
+ros2 topic echo (/*)
+ros2 topic info (/*) --verbose  - informacion detallada de los topics
+ros2 topic echo $topic --qos-reliability  - QoS fiable
+ros topic pub -r 10 $topic $tipo_mensaje 'data: hola'
+ros2 doctor    - dice que pasa si estas hasta "el gorro"
+ros2 bag record - graba lo que se esta publicando
+ros2 launch
+ros2 multicast (send/recieve) - mira si la red puede soportar multicast
+sudo apt-get install pyhon3-colcon-*    - install todo en local
+ros2 pkg create fino --dependencies rclcpp
+source install/setup.bash    - ejecutar algo tras compilar
+colcon build --symlink-install   - compilar asi
+colcon build --symlink-install --packages-select intro_ros2  - compilar un paquete
+colcon test    - para los test de guia de estilo
+vcs-import . < plansys2/third_parties
+ros2 launch br2_tiago sim.launch.py
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/nav_vel -p use_sim_time:=true
+ros2 lifecycle get /nodo   - estado del lifecycle
+ros2 lifecycle set /nodo configure   - cambia de estado (creo)
+ros2 lifecycle set /nodo activate
+build/test_ci/node_test     - test de nodos
