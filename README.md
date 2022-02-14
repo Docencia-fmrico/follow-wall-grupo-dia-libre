@@ -33,7 +33,10 @@ Como metodo de giro de angulos rectos hemos implementado un algoritmo que mira l
 Esto lo hacemos mediante medias de las ultima medidas para mirar que tendencia sigue. Ademas, en cada iteración el robot guarda la minima media encontrada, tratandola como el angulo mas recto encontrado.
 Cuando el robot pasa el angulo recto esta distancia del laser de la izquierda crece, por lo tanto si es mayor a la distancia minima, gira en sentido contrario en busca de encontrar el minimo.
 Entonces puede: vuelver a crecer la distancia o encontrar la menor, en el primer caso hace lo mismo que en el anterior, girar al contrario (con un maximo de recalculo para que no sea un balanceo) y si es menor que el menor medido el robot considera que esta en el angulo mas recto posible.
-![image](https://user-images.githubusercontent.com/78974537/153905609-07a35ee2-2819-48c9-bb32-bab7430f2ba1.png)
+
+
+![image](https://user-images.githubusercontent.com/78974537/153907394-751cb79e-68b6-446f-a024-e53bfa754733.png)
+
 
 (En este caso gira al contrario para buscar la distancia minima)
 
@@ -51,5 +54,9 @@ Para girar a la derecha hay que seguir la misma idea que el caso inicial, donde 
 ![image](https://user-images.githubusercontent.com/78974537/153905817-35d763d1-2f0e-4321-bbac-a7978695d7ce.png)
 
 Pero hay que ignorar la primera vez que cambia la tendencia de la distancia del laser porque seguramente se trate de la esquina, por lo tanto ignoramos las primeras iteraciones del giro, para evitar esto.
+
+
+![image](https://user-images.githubusercontent.com/78974537/153906804-d9d21521-7fcc-450a-9579-01df374c473e.png)
+
 
 Y con estos dos casos cubiertos el robot debe navegar correctamente en el entorno que desee siguiendo una pared a cierta distancia.
