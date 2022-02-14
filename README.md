@@ -60,3 +60,10 @@ Pero hay que ignorar la primera vez que cambia la tendencia de la distancia del 
 
 
 Y con estos dos casos cubiertos el robot debe navegar correctamente en el entorno que desee siguiendo una pared a cierta distancia.
+
+Aquí podemos ver un vídeo demostración del funcionamiento:
+
+
+https://user-images.githubusercontent.com/78983070/153943827-3d9c2f48-5b11-4b6f-8ffb-f06e9b14a3b0.mp4
+
+
