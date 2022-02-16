@@ -14,6 +14,10 @@
 
 #include "follow_wall/follow_wall.hpp"
 #include <memory>
+#include <cstdint>
+#include <algorithm>
+#include <iostream>
+#include <iomanip>
 
 #include "lifecycle_msgs/msg/state.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -21,7 +25,6 @@
 #include "std_msgs/msg/string.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
-
 
 namespace follow_wall
 {
@@ -40,9 +43,9 @@ FollowWallLifeCycle::on_configure(const rclcpp_lifecycle::State & state)
   RCLCPP_INFO(get_logger(), "Node Configuring");
 
   laser_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
-    "/scan_raw", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
+    "/scan_filtered", 10, std::bind(&FollowWallLifeCycle::laser_cb, this, _1));
 
-  speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/nav_vel", 10);
+  speed_pub_ = create_publisher<geometry_msgs::msg::Twist>("/commands/velocity", 10);
   state_ = 0;
   is_turning_ = 0;
   turn_to_ = 1;
@@ -164,7 +167,7 @@ FollowWallLifeCycle::do_work()
     }
 
     is_turning_ = 1;
-    cmd = turn(turn_to_ * RIGHT, 0.2);
+    cmd = turn(turn_to_ * RIGHT, 0.5);
 
     count_it_rot_++;
     if (count_it_rot_ >= MAX_ROTATIONS) {
@@ -191,6 +194,9 @@ FollowWallLifeCycle::do_work()
       cmd.angular.z = 0;
     }
   }
+  
+  cmd.linear.x = std::clamp(cmd.linear.x, 0.0, 0.2);
+  //cmd.angular.z = std::clamp(cmd.angular.z, 0.0, 0.4); 
 
   speed_pub_->publish(cmd);
   // RCLCPP_INFO(get_logger(), "State [%d]", state_);
@@ -199,19 +205,41 @@ FollowWallLifeCycle::do_work()
 float
 FollowWallLifeCycle::get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data)
 {
-  return laser_data->ranges.size() / 2 + (LEFT_DETECTION_ANGLE) / laser_data->angle_increment;
+  return laser_data->ranges.size() * 3/4;
 }
 
 float
 FollowWallLifeCycle::get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data)
 {
-  int start = laser_data->ranges.size() / 2 - SWEEPING_RANGE / 2;
-  int end = laser_data->ranges.size() / 2 + SWEEPING_RANGE / 2;
+  int start =  static_cast<int>(laser_data->ranges.size() - SWEEPING_RANGE / 2);
+  int end =  static_cast<int>(SWEEPING_RANGE / 2);
   float avg = 0;
-  for (int i = start; i < end; i++) {
-    avg = laser_data->ranges[i] + avg;
+  int fail_ctr = 0;
+
+  for (int i = start; i < 0; i++) {
+    if (std::isinf(laser_data->ranges[i])){
+      avg = laser_data->range_max + avg;
+    } 
+    else if (std::isnan(laser_data->ranges[i])){
+      fail_ctr++;
+    }
+    else{
+      avg = laser_data->ranges[i] + avg;
+    }
   }
-  return avg / SWEEPING_RANGE;
+  for (int i = 0; i < end; i++) {
+    if (std::isinf(laser_data->ranges[i])){
+      avg = laser_data->range_max + avg;
+    } 
+    else if (std::isnan(laser_data->ranges[i])){
+      fail_ctr++;
+    }
+    else{
+      avg = laser_data->ranges[i] + avg;
+    }
+  }
+
+  return avg / (SWEEPING_RANGE - fail_ctr);
 }
 
 float
@@ -220,10 +248,20 @@ FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr lase
   int start = static_cast<int>(get_left_lecture(laser_data) - SWEEPING_RANGE / 2);
   int end = static_cast<int>(get_left_lecture(laser_data) + SWEEPING_RANGE / 2);
   float avg = 0;
+  int fail_ctr = 0;
+
   for (int i = start; i < end; i++) {
-    avg = laser_data->ranges[i] + avg;
+    if (std::isinf(laser_data->ranges[i])){
+      avg = laser_data->range_max + avg;
+    } 
+    else if (std::isnan(laser_data->ranges[i])){
+      fail_ctr++;
+    }
+    else{
+      avg = laser_data->ranges[i] + avg;
+    }
   }
-  return avg / SWEEPING_RANGE;
+  return avg / (SWEEPING_RANGE - fail_ctr);
 }
 
 void
@@ -231,6 +269,8 @@ FollowWallLifeCycle::laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
 {
   distance_to_left_ = get_object_left(msg);
   distance_to_center_ = get_object_center(msg);
+  RCLCPP_INFO(get_logger(), "center [%f]", distance_to_center_);
+  RCLCPP_INFO(get_logger(), "left [%f]", distance_to_left_);
 }
 
 }  // namespace follow_wall

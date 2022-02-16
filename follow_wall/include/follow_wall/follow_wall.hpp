@@ -82,13 +82,13 @@ private:
   const float TREND_MAX_DIST = 2.0;
   const float TREND_MIN_DIST = 0.1;
   const float DIST_VARIATION = 0.05;
-  const int MAX_RECALCULATIONS = 5;
+  const int MAX_RECALCULATIONS = 0;
   const int MAX_ROTATIONS = 80;
   const float FLOAT_ZERO = 0.0;
-  const float LINEAR_SPEED = 0.25;
-  const float ANGULAR_KD = 1 / 10;
+  const float LINEAR_SPEED = 0.65;
+  const float ANGULAR_KD = 1 / 3;
   const float SWEEPING_RANGE = 6;
-  const float OBJECT_LIMIT = 0.45;
+  const float OBJECT_LIMIT = 0.35;
   const int MAX_IT = 15;
   const float LEFT_DETECTION_ANGLE = 1.57;
 
