@@ -109,7 +109,7 @@ FollowWallLifeCycle::turn(int direction, float wvel)
 bool
 FollowWallLifeCycle::trend_algortihm(float dist)
 {
-  if (TREND_MAX_DIST > dist > TREND_MIN_DIST) {
+  if (TREND_MAX_DIST > dist && dist > TREND_MIN_DIST) {
     tend_mean_ += dist;
     tend_it_++;
   }
@@ -130,7 +130,7 @@ FollowWallLifeCycle::trend_algortihm(float dist)
         turn_to_ *= -1;
         count_it_trend_++;
         if (dist <= min_dist_ + DIST_VARIATION || count_it_trend_ == MAX_RECALCULATIONS) {
-          // RCLCPP_INFO(get_logger(), "Finish");
+          RCLCPP_INFO(get_logger(), "min dist [%f]", min_dist_);
           count_it_trend_ = 0;
           prev_mean_ = 0;
           min_dist_ = MAX_DIST_RANGE;
@@ -162,6 +162,7 @@ FollowWallLifeCycle::do_work()
   }
 
   if (distance_to_center_ < OBJECT_LIMIT || is_turning_ == 1) {
+    RCLCPP_INFO(get_logger(), "GIRO HORRIBLE");
     if (is_turning_ != 1) {
       turn_to_ = 1;
     }
@@ -179,9 +180,9 @@ FollowWallLifeCycle::do_work()
     }
   } else {
     if (state_) {
-      cmd.linear.x = LINEAR_SPEED - (distance_to_left_ - OBJECT_LIMIT) / 2;
-      cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT - 0.1) +
-        (distance_to_left_ - OBJECT_LIMIT - 0.1 - prev_error_) * ANGULAR_KD;
+      cmd.linear.x = LINEAR_SPEED - (distance_to_left_ - OBJECT_LIMIT);
+      cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT ) * ANGULAR_KP +
+        (distance_to_left_ - OBJECT_LIMIT - prev_error_) * ANGULAR_KD;
       prev_error_ = distance_to_left_ - OBJECT_LIMIT;
 
       if (distance_to_left_ - OBJECT_LIMIT > 1) {
@@ -199,7 +200,7 @@ FollowWallLifeCycle::do_work()
   //cmd.angular.z = std::clamp(cmd.angular.z, 0.0, 0.4); 
 
   speed_pub_->publish(cmd);
-  // RCLCPP_INFO(get_logger(), "State [%d]", state_);
+  //RCLCPP_INFO(get_logger(), "W [%d]", cmd.angular.z);
 }
 
 float
@@ -217,10 +218,7 @@ FollowWallLifeCycle::get_object_center(sensor_msgs::msg::LaserScan::SharedPtr la
   int fail_ctr = 0;
 
   for (int i = start; i < 0; i++) {
-    if (std::isinf(laser_data->ranges[i])){
-      avg = laser_data->range_max + avg;
-    } 
-    else if (std::isnan(laser_data->ranges[i])){
+    if (std::isnan(laser_data->ranges[i])||std::isinf(laser_data->ranges[i])){
       fail_ctr++;
     }
     else{
@@ -228,10 +226,7 @@ FollowWallLifeCycle::get_object_center(sensor_msgs::msg::LaserScan::SharedPtr la
     }
   }
   for (int i = 0; i < end; i++) {
-    if (std::isinf(laser_data->ranges[i])){
-      avg = laser_data->range_max + avg;
-    } 
-    else if (std::isnan(laser_data->ranges[i])){
+    if (std::isnan(laser_data->ranges[i])||std::isinf(laser_data->ranges[i])){
       fail_ctr++;
     }
     else{
@@ -251,10 +246,7 @@ FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr lase
   int fail_ctr = 0;
 
   for (int i = start; i < end; i++) {
-    if (std::isinf(laser_data->ranges[i])){
-      avg = laser_data->range_max + avg;
-    } 
-    else if (std::isnan(laser_data->ranges[i])){
+    if (std::isnan(laser_data->ranges[i])||std::isinf(laser_data->ranges[i])){
       fail_ctr++;
     }
     else{
@@ -267,8 +259,11 @@ FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr lase
 void
 FollowWallLifeCycle::laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
 {
-  distance_to_left_ = get_object_left(msg);
+  distance_to_left_ = get_object_left(msg) * 0.35/0.7;
   distance_to_center_ = get_object_center(msg);
+  if (distance_to_center_ == 0.0){
+    distance_to_center_ = 5;
+  }
   RCLCPP_INFO(get_logger(), "center [%f]", distance_to_center_);
   RCLCPP_INFO(get_logger(), "left [%f]", distance_to_left_);
 }
