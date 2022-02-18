@@ -16,7 +16,7 @@
 #define FOLLOW_WALL__FOLLOW_WALL_HPP_
 
 #include <memory>
-#include <cmath>
+#include <math.h>
 
 #include "lifecycle_msgs/msg/state.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -54,6 +54,8 @@ public:
 
 protected:
   float distance_to_left_;
+  float distance_to_a_;
+  float distance_to_b_;
   float distance_to_center_;
   float distance_max_range_;
   float distance_upleft_;
@@ -63,7 +65,7 @@ protected:
   int turning_left_;
 
   float get_object_center(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
-  float get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+  float get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data, float lecture);
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
@@ -82,15 +84,16 @@ private:
   const float TREND_MAX_DIST = 2.0;
   const float TREND_MIN_DIST = 0.1;
   const float DIST_VARIATION = 0.05;
-  const int MAX_RECALCULATIONS = 5;
+  const int MAX_RECALCULATIONS = 3;
   const int MAX_ROTATIONS = 80;
   const float FLOAT_ZERO = 0.0;
   const float LINEAR_SPEED = 0.65;
-  const float ANGULAR_KD = 10;
-  const float ANGULAR_KP = 1;
+  const float ANGULAR_KD = 7;
+  const float ANGULAR_KP = 10;
   const float SWEEPING_RANGE = 7;
-  const float OBJECT_LIMIT = 0.25;
-  const int MAX_IT = 3;
+  const float OBJECT_LIMIT = 0.35;
+  const int ANGLE_DIFF = 10;
+  const int MAX_IT = 7;
   const float LEFT_DETECTION_ANGLE = 1.57;
 
   // to understand how these functions work check this image
@@ -98,8 +101,9 @@ private:
 
   geometry_msgs::msg::Twist turn(int direction, float wvel);
   bool trend_algortihm(float dist);
+  float get_a_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
+  float get_b_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
   float get_left_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
-  float get_object_upleft(sensor_msgs::msg::LaserScan::SharedPtr laser_data);
 
   void laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 };

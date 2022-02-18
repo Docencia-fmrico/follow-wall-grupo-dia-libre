@@ -162,7 +162,7 @@ FollowWallLifeCycle::do_work()
   }
 
   if (distance_to_center_ < OBJECT_LIMIT || is_turning_ == 1) {
-    RCLCPP_INFO(get_logger(), "GIRO HORRIBLE");
+    
     if (is_turning_ != 1) {
       turn_to_ = 1;
     }
@@ -180,10 +180,14 @@ FollowWallLifeCycle::do_work()
     }
   } else {
     if (state_) {
-      cmd.linear.x = LINEAR_SPEED - (distance_to_left_ - OBJECT_LIMIT);
-      cmd.angular.z = (distance_to_left_ - OBJECT_LIMIT ) * ANGULAR_KP +
-        (distance_to_left_ - OBJECT_LIMIT - prev_error_) * ANGULAR_KD;
-      prev_error_ = distance_to_left_ - OBJECT_LIMIT;
+      cmd.linear.x = LINEAR_SPEED;
+
+      float a_b_error = distance_to_a_ - distance_to_b_;
+      RCLCPP_INFO(get_logger(), "PD ACTUANDO: distancia a: %f, distancia b: %f, error: %f", distance_to_a_, distance_to_b_, a_b_error);
+
+      cmd.angular.z = (a_b_error) * ANGULAR_KP +
+        (a_b_error - prev_error_) * ANGULAR_KD;
+      prev_error_ = a_b_error;
 
       if (distance_to_left_ - OBJECT_LIMIT > 1) {
         turning_left_ = 1;
@@ -197,10 +201,22 @@ FollowWallLifeCycle::do_work()
   }
   
   cmd.linear.x = std::clamp(cmd.linear.x, 0.0, 0.2);
-  //cmd.angular.z = std::clamp(cmd.angular.z, 0.0, 0.4); 
+  cmd.angular.z = std::clamp(cmd.angular.z, -0.6, 0.6); 
 
   speed_pub_->publish(cmd);
   //RCLCPP_INFO(get_logger(), "W [%d]", cmd.angular.z);
+}
+
+float
+FollowWallLifeCycle::get_a_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data)
+{
+  return laser_data->ranges.size() * 3/4 + ANGLE_DIFF;
+}
+
+float
+FollowWallLifeCycle::get_b_lecture(sensor_msgs::msg::LaserScan::SharedPtr laser_data)
+{
+  return laser_data->ranges.size() * 3/4 - ANGLE_DIFF;
 }
 
 float
@@ -218,16 +234,22 @@ FollowWallLifeCycle::get_object_center(sensor_msgs::msg::LaserScan::SharedPtr la
   int fail_ctr = 0;
 
   for (int i = start; i < 0; i++) {
-    if (std::isnan(laser_data->ranges[i])||std::isinf(laser_data->ranges[i])){
+    if (std::isnan(laser_data->ranges[i])){
       fail_ctr++;
+    }
+    else if (std::isinf(laser_data->ranges[i])){
+       avg = TREND_MAX_DIST + avg;
     }
     else{
       avg = laser_data->ranges[i] + avg;
     }
   }
   for (int i = 0; i < end; i++) {
-    if (std::isnan(laser_data->ranges[i])||std::isinf(laser_data->ranges[i])){
+    if (std::isnan(laser_data->ranges[i])){
       fail_ctr++;
+    }
+    else if (std::isinf(laser_data->ranges[i])){
+       avg = TREND_MAX_DIST + avg;
     }
     else{
       avg = laser_data->ranges[i] + avg;
@@ -238,16 +260,19 @@ FollowWallLifeCycle::get_object_center(sensor_msgs::msg::LaserScan::SharedPtr la
 }
 
 float
-FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data)
+FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr laser_data, float lecture)
 {
-  int start = static_cast<int>(get_left_lecture(laser_data) - SWEEPING_RANGE / 2);
-  int end = static_cast<int>(get_left_lecture(laser_data) + SWEEPING_RANGE / 2);
+  int start = static_cast<int>(lecture - SWEEPING_RANGE / 2);
+  int end = static_cast<int>(lecture + SWEEPING_RANGE / 2);
   float avg = 0;
   int fail_ctr = 0;
 
   for (int i = start; i < end; i++) {
-    if (std::isnan(laser_data->ranges[i])||std::isinf(laser_data->ranges[i])){
+    if (std::isnan(laser_data->ranges[i])){
       fail_ctr++;
+    }
+    else if (std::isinf(laser_data->ranges[i])){
+       avg = TREND_MAX_DIST + avg;
     }
     else{
       avg = laser_data->ranges[i] + avg;
@@ -259,13 +284,14 @@ FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr lase
 void
 FollowWallLifeCycle::laser_cb(const sensor_msgs::msg::LaserScan::SharedPtr msg)
 {
-  distance_to_left_ = get_object_left(msg) * 0.35/0.7;
+  distance_to_left_ = get_object_left(msg, get_left_lecture(msg)) * 0.35/0.7;
+  distance_to_a_ = get_object_left(msg, get_a_lecture(msg)) * 0.35/0.7;
+  distance_to_b_ = get_object_left(msg, get_b_lecture(msg)) * 0.35/0.7;
+
   distance_to_center_ = get_object_center(msg);
   if (distance_to_center_ == 0.0){
     distance_to_center_ = 5;
   }
-  RCLCPP_INFO(get_logger(), "center [%f]", distance_to_center_);
-  RCLCPP_INFO(get_logger(), "left [%f]", distance_to_left_);
 }
 
 }  // namespace follow_wall
