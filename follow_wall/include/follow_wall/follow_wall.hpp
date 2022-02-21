@@ -91,7 +91,7 @@ private:
   const float ANGULAR_KD = 7;
   const float ANGULAR_KP = 10;
   const float SWEEPING_RANGE = 7;
-  const float OBJECT_LIMIT = 0.35;
+  const float OBJECT_LIMIT = 0.25;
   const int ANGLE_DIFF = 10;
   const int MAX_IT = 7;
   const float LEFT_DETECTION_ANGLE = 1.57;

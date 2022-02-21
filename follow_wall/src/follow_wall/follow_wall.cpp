@@ -264,20 +264,22 @@ FollowWallLifeCycle::get_object_left(sensor_msgs::msg::LaserScan::SharedPtr lase
 {
   int start = static_cast<int>(lecture - SWEEPING_RANGE / 2);
   int end = static_cast<int>(lecture + SWEEPING_RANGE / 2);
-  float avg = 0;
+  float avg = 0.0;
   int fail_ctr = 0;
 
   for (int i = start; i < end; i++) {
-    if (std::isnan(laser_data->ranges[i])){
+    if (std::isinf(laser_data->ranges[i]) || (std::isnan(laser_data->ranges[i]))){
       fail_ctr++;
-    }
-    else if (std::isinf(laser_data->ranges[i])){
-       avg = TREND_MAX_DIST + avg;
     }
     else{
       avg = laser_data->ranges[i] + avg;
     }
   }
+  
+  if (fail_ctr == SWEEPING_RANGE) { // all fail, return max dist
+    return TREND_MAX_DIST;
+  }
+
   return avg / (SWEEPING_RANGE - fail_ctr);
 }
 
