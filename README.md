@@ -29,7 +29,7 @@ Finalmente, hemos cambiado el algoritmo de obtención del error del controlador 
 
 ![Nuevo_PD](https://user-images.githubusercontent.com/78983070/154997515-581e8d5c-03a6-40af-ab67-2c5510baeb5c.png)
 
-Al ser el mismo ángulo α, si A y B son iguales, restar A - B tendrá resultado 0. Si A es mayor que ve, la resta será positiva y si B es mayor que A, la resta será negativa.
+Al ser el mismo ángulo α, si A y B son iguales, restar A - B tendrá resultado 0. Si A es mayor que B, la resta será positiva y si B es mayor que A, la resta será negativa.
 
 De esta manera obtenemos un error con signo variante que nos permitirá ajustar el controlador PD dependiendo de cómo esté situado el robot respecto a una pared.
 
